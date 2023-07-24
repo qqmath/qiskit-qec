@@ -164,8 +164,7 @@ class SurfaceCodeCircuit(CodeCircuit):
             circuit_list[0] = circuit['0']
             circuit_list[1] = circuit['1']
         """
-        circuit_list = [self.circuit[log] for j, log in enumerate(["0", "1"])]
-        return circuit_list
+        return [self.circuit[log] for log in ["0", "1"]]
 
     def x(self, logs=("0", "1"), barrier=False):
         """
@@ -212,10 +211,10 @@ class SurfaceCodeCircuit(CodeCircuit):
 
         # classical registers for this round
         self.zplaq_bits.append(
-            ClassicalRegister(self._num_xy, "round_" + str(self.T) + "_zplaq_bit")
+            ClassicalRegister(self._num_xy, f"round_{str(self.T)}_zplaq_bit")
         )
         self.xplaq_bits.append(
-            ClassicalRegister(self._num_xy, "round_" + str(self.T) + "_xplaq_bit")
+            ClassicalRegister(self._num_xy, f"round_{str(self.T)}_xplaq_bit")
         )
 
         for log in ["0", "1"]:
@@ -265,23 +264,17 @@ class SurfaceCodeCircuit(CodeCircuit):
 
         # final syndrome for plaquettes deduced from final code qubit readout
         final_readout = string.split(" ")[0][::-1]
-        if basis == "z":
-            plaqs = self.zplaqs
-        else:
-            plaqs = self.xplaqs
+        plaqs = self.zplaqs if basis == "z" else self.xplaqs
         full_syndrome = ""
         for plaq in plaqs:
-            parity = 0
-            for q in plaq:
-                if q is not None:
-                    parity += int(final_readout[q])
+            parity = sum(int(final_readout[q]) for q in plaq if q is not None)
             full_syndrome = str(parity % 2) + full_syndrome
 
         # results from all other plaquette syndrome measurements then added
         if basis == "z":
-            full_syndrome = full_syndrome + " " + " ".join(string.split(" ")[2::2])
+            full_syndrome = f"{full_syndrome} " + " ".join(string.split(" ")[2::2])
         else:
-            full_syndrome = full_syndrome + " " + " ".join(string.split(" ")[1::2])
+            full_syndrome = f"{full_syndrome} " + " ".join(string.split(" ")[1::2])
 
         # changes between one syndrome and the next then calculated
         syndrome_list = full_syndrome.split(" ")
@@ -291,27 +284,24 @@ class SurfaceCodeCircuit(CodeCircuit):
         for t in range(height):
             for j in range(width):
                 if self._resets:
-                    if t == 0:
-                        change = syndrome_list[-1][j] != "0"
+                    change = (
+                        syndrome_list[-1][j] != "0"
+                        if t == 0
+                        else syndrome_list[-t][j] != syndrome_list[-t - 1][j]
+                    )
+                elif t <= 1:
+                    if t != self.T:
+                        change = syndrome_list[-t - 1][j] != "0"
                     else:
-                        change = syndrome_list[-t][j] != syndrome_list[-t - 1][j]
-                    syndrome_changes += "0" * (not change) + "1" * change
+                        change = syndrome_list[-t - 1][j] != syndrome_list[-t][j]
+                elif t == self.T:
+                    last3 = "".join(syndrome_list[-t - 1 + dt][j] for dt in range(3))
+                    change = last3.count("1") % 2 == 1
                 else:
-                    if t <= 1:
-                        if t != self.T:
-                            change = syndrome_list[-t - 1][j] != "0"
-                        else:
-                            change = syndrome_list[-t - 1][j] != syndrome_list[-t][j]
-                    elif t == self.T:
-                        last3 = ""
-                        for dt in range(3):
-                            last3 += syndrome_list[-t - 1 + dt][j]
-                        change = last3.count("1") % 2 == 1
-                    else:
-                        change = syndrome_list[-t - 1][j] != syndrome_list[-t + 1][j]
-                    syndrome_changes += "0" * (not change) + "1" * change
+                    change = syndrome_list[-t - 1][j] != syndrome_list[-t + 1][j]
+                syndrome_changes += "0" * (not change) + "1" * change
             syndrome_changes += " "
-        syndrome_changes = syndrome_changes[0:-1]
+        syndrome_changes = syndrome_changes[:-1]
 
         if basis != self.basis:
             # trim the noisy nonsense (first and last rounds)
@@ -351,17 +341,13 @@ class SurfaceCodeCircuit(CodeCircuit):
         # then get syndrome changes
         syndrome_changes = self._string2changes(string)
 
-        # the space separated string of syndrome changes then gets a
-        # double space separated logical value on the end
-        new_string = " ".join(measured_Z) + "  " + syndrome_changes
-
-        return new_string
+        return " ".join(measured_Z) + "  " + syndrome_changes
 
     def _separate_string(self, string):
-        separated_string = []
-        for syndrome_type_string in string.split("  "):
-            separated_string.append(syndrome_type_string.split(" "))
-        return separated_string
+        return [
+            syndrome_type_string.split(" ")
+            for syndrome_type_string in string.split("  ")
+        ]
 
     def string2nodes(self, string, **kwargs):
         """
@@ -439,17 +425,12 @@ class SurfaceCodeCircuit(CodeCircuit):
 
         bulk_nodes = [node for node in nodes if not node.is_boundary]
         boundary_nodes = [node for node in nodes if node.is_boundary]
-        given_logicals = set(node.index for node in boundary_nodes)
+        given_logicals = {node.index for node in boundary_nodes}
 
-        if self.basis == "z":
-            coords = self._zplaq_coords
-        else:
-            coords = self._xplaq_coords
-
+        coords = self._zplaq_coords if self.basis == "z" else self._xplaq_coords
         if (len(bulk_nodes) % 2) == 0:
             if (len(boundary_nodes) % 2) == 0 or ignore_extra_boundary:
                 neutral = True
-                flipped_logicals = set()
                 # estimate num_errors from size
                 if bulk_nodes:
                     xs = []
@@ -467,17 +448,14 @@ class SurfaceCodeCircuit(CodeCircuit):
                     num_errors = 0
             else:
                 neutral = False
-                flipped_logicals = set()
                 num_errors = 0
+            flipped_logicals = set()
         else:
             # find nearest boundary
             num_errors = (self.d - 1) / 2
             for node in bulk_nodes:
                 x, y = coords[node.index]
-                if self.basis == "z":
-                    p = y
-                else:
-                    p = x
+                p = y if self.basis == "z" else x
                 num_errors = min(num_errors, min(p + 1, self.d - p))
             flipped_logicals = {1 - int(p < (self.d - 1) / 2)}
 

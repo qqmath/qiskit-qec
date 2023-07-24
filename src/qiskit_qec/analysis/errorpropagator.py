@@ -49,13 +49,17 @@ class ErrorPropagator(BaseErrorPropagator):
         Returns:
             BaseErrorPropagator: _description_
         """
-        if eptype == "auto":
-            if C_ERROR_PROPAGATOR is True:
-                return CErrorPropagator(qreg_size, creg_size)
+        if (
+            eptype == "auto"
+            and C_ERROR_PROPAGATOR is True
+            or eptype != "auto"
+            and eptype == "c"
+            and C_ERROR_PROPAGATOR
+        ):
+            return CErrorPropagator(qreg_size, creg_size)
+        elif eptype == "auto":
             return PyErrorPropagator(qreg_size, creg_size)
-        if eptype == "c":
-            if C_ERROR_PROPAGATOR:
-                return CErrorPropagator(qreg_size, creg_size)
+        elif eptype == "c":
             raise ImportError("C/C++ ErrorPropagator extension not loaded.")
         if eptype == "py":
             return PyErrorPropagator(qreg_size, creg_size)

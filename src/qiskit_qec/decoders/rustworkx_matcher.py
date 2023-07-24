@@ -113,9 +113,9 @@ class RustworkxMatcher(BaseMatcher):
             v0 = vertex_path[i]
             v1 = vertex_path[i + 1]
             if graph.get_edge_data(v0, v1).properties["measurement_error"] == 1:
-                measurement_errors ^= set(
-                    [(graph.nodes()[v0].time, tuple(graph.nodes()[v0].qubits))]
-                )
+                measurement_errors ^= {
+                    (graph.nodes()[v0].time, tuple(graph.nodes()[v0].qubits))
+                }
             qubit_errors ^= set(graph.get_edge_data(v0, v1).qubits)
             logging.debug(
                 "_error_chain_for_vertex_path q = %s, m = %s",

@@ -71,8 +71,10 @@ class HHC:
         """
         x_gauges = []
         for i in range(d - 1):
-            for j in range(d):
-                x_gauges.append([self.to_index(i, j, d), self.to_index(i + 1, j, d)])
+            x_gauges.extend(
+                [self.to_index(i, j, d), self.to_index(i + 1, j, d)]
+                for j in range(d)
+            )
         return x_gauges
 
     def _z_gauge_generators(self, d: int) -> List[List[int]]:
@@ -139,8 +141,7 @@ class HHC:
         for j in range(d - 1):
             new_stabilizer = []
             for i in range(d):
-                new_stabilizer.append(self.to_index(i, j, d))
-                new_stabilizer.append(self.to_index(i, j + 1, d))
+                new_stabilizer.extend((self.to_index(i, j, d), self.to_index(i, j + 1, d)))
             z_stabilizers.append(new_stabilizer)
         return z_stabilizers
 
@@ -161,11 +162,8 @@ class HHC:
         A boundary qubit is a qubit adjacent to the Z-type boundary on which
         a logical X chain terminates.
         """
-        z_boundary = []
-        for i in range(d):
-            z_boundary.append([d * i])
-        for i in range(d):
-            z_boundary.append([d * i + d - 1])
+        z_boundary = [[d * i] for i in range(d)]
+        z_boundary.extend([d * i + d - 1] for i in range(d))
         return z_boundary
 
     @staticmethod
@@ -175,9 +173,6 @@ class HHC:
         A boundary qubit is a qubit adjacent to the X-type boundary on which
         a logical Z chain terminates.
         """
-        x_boundary = []
-        for i in range(d):
-            x_boundary.append([i])
-        for i in range(d):
-            x_boundary.append([d * (d - 1) + i])
+        x_boundary = [[i] for i in range(d)]
+        x_boundary.extend([d * (d - 1) + i] for i in range(d))
         return x_boundary

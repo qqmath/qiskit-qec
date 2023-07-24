@@ -46,15 +46,11 @@ class Shape:
         """
         self.points = points
         if lines is None:
-            if lines is None and indices is not None:
+            if indices is not None:
                 raise QiskitError("If <indices> are defined then lines must also be defined")
             lines = self.create_lines(points)
         self.lines = lines
-        if indices is not None:
-            self.indices = indices
-        else:
-            self.indices = list(range(len(self.points)))
-
+        self.indices = list(range(len(self.points))) if indices is None else indices
         self.bounds = self.bounding_box_from_lines()
 
     def bounding_box_from_lines(self):
@@ -74,8 +70,7 @@ class Shape:
     def create_lines(points: List):
         """Creates Lines from a set of points"""
         num_points = len(points)
-        lines = [[index, (index + 1) % num_points] for index in range(num_points)]
-        return lines
+        return [[index, (index + 1) % num_points] for index in range(num_points)]
 
     @classmethod
     def square(
@@ -163,32 +158,30 @@ class Shape:
         if not manifold.ison(origin):
             raise QiskitError(f"{origin} must be on the surface if the manifold")
 
-        if isinstance(manifold, Plane):
-            r0 = origin.astype(dtype)
-            r1 = origin + scale1 * direction
-            r1 = r1.astype(dtype)
-            direction = Plane.rotate(theta=90, vector=direction)
-            r2 = r1 + scale2 * direction
-            r2 = r2.astype(dtype)
-            direction = Plane.rotate(theta=90, vector=direction)
-            r3 = r2 + scale1 * direction
-            r3 = r3.astype(dtype)
-
-            # scale up the rectangle to have diagonal lenths + 2 * delta
-            center = (r1 + r3) / 2
-            scale = 1 + delta / np.linalg.norm(r1)
-            r0 = scale * r0 + (1 - scale) * center
-            r1 = scale * r1 + (1 - scale) * center
-            r2 = scale * r2 + (1 - scale) * center
-            r3 = scale * r3 + (1 - scale) * center
-
-            points = [r0, r1, r2, r3]
-            lines = [[0, 1], [1, 2], [2, 3], [3, 0]]
-
-            return cls(points, lines)
-
-        else:
+        if not isinstance(manifold, Plane):
             raise QiskitError(f"Manifold {manifold} not yet supported")
+        r0 = origin.astype(dtype)
+        r1 = origin + scale1 * direction
+        r1 = r1.astype(dtype)
+        direction = Plane.rotate(theta=90, vector=direction)
+        r2 = r1 + scale2 * direction
+        r2 = r2.astype(dtype)
+        direction = Plane.rotate(theta=90, vector=direction)
+        r3 = r2 + scale1 * direction
+        r3 = r3.astype(dtype)
+
+        # scale up the rectangle to have diagonal lenths + 2 * delta
+        center = (r1 + r3) / 2
+        scale = 1 + delta / np.linalg.norm(r1)
+        r0 = scale * r0 + (1 - scale) * center
+        r1 = scale * r1 + (1 - scale) * center
+        r2 = scale * r2 + (1 - scale) * center
+        r3 = scale * r3 + (1 - scale) * center
+
+        points = [r0, r1, r2, r3]
+        lines = [[0, 1], [1, 2], [2, 3], [3, 0]]
+
+        return cls(points, lines)
 
     @staticmethod
     def _l2distance(p: Tuple, q: Tuple) -> Real:
@@ -216,13 +209,14 @@ class Shape:
                 return a + epsilon < p < b - epsilon
             else:
                 return b + epsilon < p < a - epsilon
+        elif a == b:
+            return p == a
         else:
-            if a == b:
-                return p == a
-            if a < b:
-                return a + epsilon <= p <= b - epsilon
-            else:
-                return b + epsilon <= p <= a - epsilon
+            return (
+                a + epsilon <= p <= b - epsilon
+                if a < b
+                else b + epsilon <= p <= a - epsilon
+            )
 
     def contains(self, point, on_boundary=True, epsilon=0.01, method="winding") -> bool:
         """
@@ -317,7 +311,7 @@ class Shape:
                                 d = min(d, Shape._l2distance((x, y), (x0, y0)))
                             else:
                                 d = min(d, Shape._l2distance((x, y), (x1, y1)))
-            if bool(d < epsilon):
+            if d < epsilon:
                 return True
 
         def det(point, start, end):
@@ -431,7 +425,6 @@ class Shape:
                     count += 1
                     dprint(f"m=inf inside count = {count}")
             elif abs(m) < 0.000001:
-                pass
                 dprint(f"m~0 inside count = {count}")
             elif m > 0:
                 if Shape.is_between(y, y0, y1, epsilon=0.000000001, strict=True) and y > yp:
@@ -450,7 +443,6 @@ class Shape:
             if abs(y - y1) < epsilon:
                 if y1 > max(y0, y2) or y1 < min(y0, y2):
                     dprint(r"/\ or \/ vertex count")
-                    pass
                 elif self.is_between(y1, y0, y2, epsilon=0, strict=True):
                     if x <= x1:
                         count += 1
@@ -458,14 +450,13 @@ class Shape:
                 elif abs(y1 - y2) < 0.000001:
                     if y1 > max(y0, y3) or y1 < min(y0, y3):
                         dprint(r"/_\ or \_/ vertex count")
-                        pass
                     elif self.is_between(y1, y0, y3, epsilon=0, strict=True):
                         if (x <= x1 < x2) or (x1 > x2 >= x):
                             count += 1
                             dprint(r"/_/ or \_\ vertex count =" + f"{count}")
 
         dprint(f"d<epsilon = {d < epsilon} and count %2 = {count %2}")
-        return bool(d < epsilon) or bool(int(count) % 2)
+        return d < epsilon or bool(int(count) % 2)
 
     def inside(
         self, tiling: Shell, on_boundary: bool = False, epsilon: Real = 0.1

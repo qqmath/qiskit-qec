@@ -19,15 +19,11 @@ def _hex_ancillas(code: HHC) -> Tuple[int, List[List[int]], List[List[int]]]:
         z_ancilla_indices list defined likewise.
         The ancilla indices are absolute indices into self.qreg.
     """
-    total_ancilla = 0
-    # Append ancillas for X gauge operators
-    x_ancilla_indices = []
-    for j in range(len(code.x_gauges)):
-        x_ancilla_indices.append([code.n + j])
-    total_ancilla += len(code.x_gauges)
+    x_ancilla_indices = [[code.n + j] for j in range(len(code.x_gauges))]
+    total_ancilla = 0 + len(code.x_gauges)
     # Append additional ancillas for Z gauge operators
     z_ancilla_indices = []
-    for j, zg in enumerate(code.z_gauges):
+    for zg in code.z_gauges:
         if len(zg) == 2:  # boundary Z gauge
             # Hex layout has 3 extra ancillas per boundary Z gauge
             start = total_ancilla
@@ -132,15 +128,17 @@ class HHCCircuit:
         if set(self.round_schedule) > set("xz"):
             raise Exception("expected round schedule of 'x', 'z' chars")
         self.basis = basis
-        if not (self.basis in ["x", "z"]):
+        if self.basis not in {"x", "z"}:
             raise Exception("expected basis to be 'x' or 'z'")
         self.initial_state = initial_state
-        if not (self.initial_state in ["+", "-"]):
+        if self.initial_state not in {"+", "-"}:
             raise Exception("expected initial state '+' or '-'")
         self.logical_paulis = logical_paulis
         if set(self.logical_paulis) > set("ixyz"):
             raise Exception("expected 'i', 'x', 'y', 'z' logical paulis")
-        if len(self.logical_paulis) > 0 and len(self.logical_paulis) != len(round_schedule):
+        if self.logical_paulis != "" and len(self.logical_paulis) != len(
+            round_schedule
+        ):
             raise Exception("len(logical paulis) != len(round schedule)")
         self.num_initialize = num_initialize
         if self.num_initialize is not None:
@@ -230,10 +228,7 @@ class HHCCircuit:
         if add_idles:
             for i in range(self.code.n):
                 if distinct_measurement_idle:
-                    if group_meas:
-                        if not finalRound:
-                            circ.append(IGate(label=self.imlabel), [self.qreg[i]])
-                    else:
+                    if group_meas and not finalRound or not group_meas:
                         circ.append(IGate(label=self.imlabel), [self.qreg[i]])
                 else:
                     circ.i(self.qreg[i])

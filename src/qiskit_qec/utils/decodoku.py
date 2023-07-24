@@ -43,10 +43,7 @@ class Decodoku:
         self.d = d
         self.process = process
         self.decoder = self.process is not None
-        if errors:
-            self.errors = errors
-        else:
-            self.errors = []
+        self.errors = errors if errors else []
         self.nonabelian = nonabelian
 
         self.size = d + 1
@@ -299,7 +296,7 @@ class Decodoku:
             "#949221",
         ]
         if len(self.error_colors) < error_num:
-            self.error_colors = self.error_colors * (1 + int(error_num / len(self.error_colors)))
+            self.error_colors *= 1 + int(error_num / len(self.error_colors))
 
         # compute boundary parities and scrub their syndromes
         parity = [0, 0]
@@ -375,11 +372,7 @@ class Decodoku:
             if self.k != 2:
                 node["value"] = 0
 
-        if original:
-            syndrome = self.original_syndrome
-        else:
-            syndrome = self.syndrome
-
+        syndrome = self.original_syndrome if original else self.syndrome
         highlighted_color = []
         for node in self.decoding_graph.graph.nodes():
             if node["is_boundary"]:
@@ -391,11 +384,10 @@ class Decodoku:
                     highlighted_color.append("red")
                     node["value"] = syndrome[x, y] % self.k
                     node["highlighted"] = True
+                elif self.decoder:
+                    highlighted_color.append("#bbbbbb")
                 else:
-                    if self.decoder:
-                        highlighted_color.append("#bbbbbb")
-                    else:
-                        highlighted_color.append("cornflowerblue")
+                    highlighted_color.append("cornflowerblue")
         self.node_color = highlighted_color
 
     def _start(self, engine):
@@ -422,11 +414,10 @@ class Decodoku:
                         if d != 2:
                             if not self.nonabelian:
                                 engine.screen.pixel[x, y].set_text(str(syndrome[x, y] % d))
+                            elif syndrome[x, y] % d == d / 2:
+                                engine.screen.pixel[x, y].set_text("Λ")
                             else:
-                                if syndrome[x, y] % d == d / 2:
-                                    engine.screen.pixel[x, y].set_text("Λ")
-                                else:
-                                    engine.screen.pixel[x, y].set_text("Φ")
+                                engine.screen.pixel[x, y].set_text("Φ")
 
                         engine.screen.pixel[x, y].set_color("red")
 
@@ -450,20 +441,19 @@ class Decodoku:
                 syndrome[x1, y1] += syndrome[x0, y0]
                 syndrome[x0, y0] = 0
                 for x, y in [(x0, y0), (x1, y1)]:
-                    if syndrome[x, y] % d == 0:
-                        if x not in [0, engine.size - 1]:
+                    if x not in [0, engine.size - 1]:
+                        if syndrome[x, y] % d == 0:
                             engine.screen.pixel[x, y].set_text("")
                             engine.screen.pixel[x, y].set_color("blue")
-                    else:
-                        if x not in [0, engine.size - 1]:
+                        else:
                             if d != 2:
-                                if not self.nonabelian:
-                                    engine.screen.pixel[x, y].set_text(str(syndrome[x, y] % d))
-                                else:
+                                if self.nonabelian:
                                     if syndrome[x, y] % d == d / 2:
                                         engine.screen.pixel[x, y].set_text("Λ")
                                     else:
                                         engine.screen.pixel[x, y].set_text("Φ")
+                                else:
+                                    engine.screen.pixel[x, y].set_text(str(syndrome[x, y] % d))
                             engine.screen.pixel[x, y].set_color("red")
 
                 engine.pressed_pixels = []

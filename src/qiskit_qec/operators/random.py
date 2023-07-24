@@ -47,8 +47,7 @@ def random_pauli(num_qubits, group_phase=False, seed=None):
     z = rng.integers(2, size=num_qubits, dtype=bool)
     x = rng.integers(2, size=num_qubits, dtype=bool)
     phase = rng.integers(4) if group_phase else 0
-    pauli = Pauli((z, x, phase))
-    return pauli
+    return Pauli((z, x, phase))
 
 
 def random_pauli_list(num_qubits, size=1, seed=None, phase=True):
@@ -215,10 +214,7 @@ def _sample_qmallows(n, rng=None):
         r = rng.uniform(0, 1)
         index = -int(np.ceil(np.log2(r + (1 - r) * eps)))
         had[i] = index < m
-        if index < m:
-            k = index
-        else:
-            k = 2 * m - index - 1
+        k = index if index < m else 2 * m - index - 1
         perm[i] = inds[k]
         del inds[k]
     return had, perm

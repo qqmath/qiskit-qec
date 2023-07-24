@@ -88,14 +88,18 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
             if tuple_order not in ["zx", "xz"]:
                 raise QiskitError(f"`tuple_order` {tuple_order} not valid")
             if len(data) == 3:
-                if tuple_order == "zx":
-                    matrix, phase_exp = pauli_rep.from_split_array(
-                        data[1], data[0], data[2], input_pauli_encoding=input_pauli_encoding
+                matrix, phase_exp = (
+                    pauli_rep.from_split_array(
+                        data[1],
+                        data[0],
+                        data[2],
+                        input_pauli_encoding=input_pauli_encoding,
                     )
-                else:
-                    matrix, phase_exp = pauli_rep.from_split_array(
+                    if tuple_order == "zx"
+                    else pauli_rep.from_split_array(
                         *data, input_pauli_encoding=input_pauli_encoding
                     )
+                )
             elif tuple_order == "zx":
                 matrix, phase_exp = pauli_rep.from_split_array(
                     data[1], data[0], 0, input_pauli_encoding=input_pauli_encoding
@@ -104,13 +108,11 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
                 matrix, phase_exp = pauli_rep.from_array(
                     *data, 0, input_pauli_encoding=input_pauli_encoding
                 )
+        elif len(data) == 0:
+            matrix = np.empty(shape=(0, 0), dtype=np.bool_)
+            phase_exp = np.empty(shape=(0,), dtype=np.int8)
         else:
-            # Conversion as iterable of Paulis
-            if len(data) == 0:
-                matrix = np.empty(shape=(0, 0), dtype=np.bool_)
-                phase_exp = np.empty(shape=(0,), dtype=np.int8)
-            else:
-                matrix, phase_exp = self._from_paulis(data, input_qubit_order)
+            matrix, phase_exp = self._from_paulis(data, input_qubit_order)
 
         super().__init__(matrix, phase_exp)
 
@@ -305,10 +307,7 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
 
     def _truncated_str(self, show_class):
         if self.num_paulis == 0:
-            if show_class:
-                return "PauliList([])"
-            else:
-                return "[]"
+            return "PauliList([])" if show_class else "[]"
         stop = self._num_paulis
         if self._truncate__:
             max_paulis = self._truncate__ // self.num_qubits
@@ -317,10 +316,7 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
         labels = [str(self[i]) for i in range(stop)]
         prefix = "PauliList(" if show_class else ""
         tail = ")" if show_class else ""
-        if stop != self._num_paulis:
-            suffix = ", ...]" + tail
-        else:
-            suffix = "]" + tail
+        suffix = f", ...]{tail}" if stop != self._num_paulis else f"]{tail}"
         list_str = np.array2string(
             np.array(labels), threshold=stop + 1, separator=", ", prefix=prefix, suffix=suffix
         )
@@ -339,9 +335,7 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
         """Entrywise comparison of Pauli equality."""
         if not isinstance(other, PauliList):
             other = PauliList(other)
-        if not isinstance(other, BasePauli):
-            return False
-        return self._eq(other)
+        return False if not isinstance(other, BasePauli) else self._eq(other)
 
     def __len__(self):
         """Return the number of Pauli rows in the table."""
@@ -640,9 +634,7 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
             ret += (index,)
         if return_counts:
             ret += (counts[sort_inds],)
-        if len(ret) == 1:
-            return ret[0]
-        return ret
+        return ret[0] if len(ret) == 1 else ret
 
     # ---------------------------------------------------------------------
     # BaseOperator methods
@@ -963,10 +955,7 @@ class PauliList(BasePauli, LinearMixin, GroupMixin):
         Returns:
             list or array: The rows of the PauliList in label form.
         """
-        if array:
-            return self.to_labels()
-        else:
-            return self.to_label().tolist()
+        return self.to_labels() if array else self.to_label().tolist()
 
     def to_matrix(self, sparse=False, array=False):
         r"""Convert to a list or array of Pauli matrices.

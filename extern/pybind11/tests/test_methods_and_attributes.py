@@ -256,26 +256,22 @@ def test_no_mixed_overloads():
 
 @pytest.mark.parametrize("access", ["ro", "rw", "static_ro", "static_rw"])
 def test_property_return_value_policies(access):
-    if not access.startswith("static"):
-        obj = m.TestPropRVP()
-    else:
-        obj = m.TestPropRVP
-
-    ref = getattr(obj, access + "_ref")
+    obj = m.TestPropRVP() if not access.startswith("static") else m.TestPropRVP
+    ref = getattr(obj, f"{access}_ref")
     assert ref.value == 1
     ref.value = 2
-    assert getattr(obj, access + "_ref").value == 2
+    assert getattr(obj, f"{access}_ref").value == 2
     ref.value = 1  # restore original value for static properties
 
-    copy = getattr(obj, access + "_copy")
+    copy = getattr(obj, f"{access}_copy")
     assert copy.value == 1
     copy.value = 2
-    assert getattr(obj, access + "_copy").value == 1
+    assert getattr(obj, f"{access}_copy").value == 1
 
-    copy = getattr(obj, access + "_func")
+    copy = getattr(obj, f"{access}_func")
     assert copy.value == 1
     copy.value = 2
-    assert getattr(obj, access + "_func").value == 1
+    assert getattr(obj, f"{access}_func").value == 1
 
 
 def test_property_rvalue_policy():

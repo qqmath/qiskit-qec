@@ -57,7 +57,7 @@ class DecodingGraphNode:
             return self.properties[key]
         else:
             raise QiskitQECError(
-                "'" + str(key) + "'" + " is not an an attribute or property of the node."
+                f"'{str(key)}' is not an an attribute or property of the node."
             )
 
     def get(self, key, _):
@@ -87,8 +87,7 @@ class DecodingGraphNode:
         return hash(repr(self))
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
     def __repr__(self):
         return str(dict(self))
@@ -117,7 +116,7 @@ class DecodingGraphEdge:
             return self.properties[key]
         else:
             raise QiskitQECError(
-                "'" + str(key) + "'" + " is not an an attribute or property of the edge."
+                f"'{str(key)}' is not an an attribute or property of the edge."
             )
 
     def get(self, key, _):
@@ -140,8 +139,7 @@ class DecodingGraphEdge:
         return hash(repr(self))
 
     def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+        yield from self.__dict__.items()
 
     def __repr__(self):
         return str(dict(self))

@@ -35,8 +35,8 @@ def _distance_test(stab: np.ndarray, logic_op: np.ndarray, weight: int) -> bool:
     m = stab.shape[0]
     pow2 = np.array([2**i for i in range(m + 1)], dtype=int)
     if (weight % 2) == 0:
-        w1 = int(weight / 2)
-        w2 = int(weight / 2)
+        w1 = weight // 2
+        w2 = weight // 2
     else:
         w1 = int((weight + 1) / 2)
         w2 = int((weight - 1) / 2)
@@ -50,10 +50,9 @@ def _distance_test(stab: np.ndarray, logic_op: np.ndarray, weight: int) -> bool:
         single_qubit_synd.append(np.dot(pow2, syndx))
         # single-qubit Z error
         syndz = np.append(stab[:, q], logic_op[q])
-        single_qubit_synd.append(np.dot(pow2, syndz))
-        # single-qubit Y error
-        single_qubit_synd.append(np.dot(pow2, syndx) ^ np.dot(pow2, syndz))
-
+        single_qubit_synd.extend(
+            (np.dot(pow2, syndz), np.dot(pow2, syndx) ^ np.dot(pow2, syndz))
+        )
     # examine all errors with the weight w1
     mask1 = 2**m
     t1c = []
@@ -122,10 +121,7 @@ def _minimum_distance_2_python(stabilizer: np.ndarray, gauge: np.ndarray, max_we
                 if w < weight:
                     weight = w
                 break
-    if weight < max_weight + 1:
-        return weight
-    else:
-        return 0
+    return weight if weight < max_weight + 1 else 0
 
 
 def _minimum_distance_1_python_core(
@@ -152,10 +148,9 @@ def _minimum_distance_1_python_core(
                 test_matrix_2 = np.vstack([gauge, error])
                 commutes = symplectic.all_commute(test_matrix)
                 in_gauge = rank(test_matrix_2) == n_minus_k_plus_r
-                if commutes:
-                    if (k > 0 and not in_gauge) or (k == 0 and in_gauge):
-                        distance = weight
-                        return distance
+                if (k > 0 and not in_gauge) or (k == 0 and in_gauge):
+                    if commutes:
+                        return weight
     return 0
 
 
@@ -175,10 +170,9 @@ def _minimum_distance_1_python(stabilizer: np.ndarray, gauge: np.ndarray, max_we
     n_minus_k = (n_minus_k_minus_r + n_minus_k_plus_r) / 2
     k = n - n_minus_k
     pauli = ["x", "y", "z"]
-    distance = _minimum_distance_1_python_core(
+    return _minimum_distance_1_python_core(
         n, n_minus_k_plus_r, k, pauli, max_weight, stabilizer, gauge
     )
-    return distance
 
 
 def _minimum_distance_2_compiled(stabilizer: np.ndarray, gauge: np.ndarray, max_weight) -> int:
@@ -208,18 +202,15 @@ def _minimum_distance_2_compiled(stabilizer: np.ndarray, gauge: np.ndarray, max_
     inputform1p = gauge.astype(np.int32).tolist()
     inputform2 = xl.astype(np.int32).tolist()
     inputform3 = zl.astype(np.int32).tolist()
-    # pylint: disable=c-extension-no-member
-    if xl.shape[0] == 0:  # k = 0, fall back to first method
+    if xl.shape[0] == 0:
         # pylint: disable=c-extension-no-member
         return _c_minimum_distance(inputform1, inputform1p, max_weight)
-    else:
-        if C_MIN_DISTANCE_BY_TESTS:
-            return _c_minimum_distance_by_tests(  # pylint: disable=c-extension-no-member
-                inputform1, inputform2, inputform3, max_weight
-            )
-        else:
-            logger.exception("from _c_minimum_distance_by_tests did not load - check import logs.")
-            raise ImportError("from _c_minimum_distance_by_tests did not load - check import logs.")
+    if C_MIN_DISTANCE_BY_TESTS:
+        return _c_minimum_distance_by_tests(  # pylint: disable=c-extension-no-member
+            inputform1, inputform2, inputform3, max_weight
+        )
+    logger.exception("from _c_minimum_distance_by_tests did not load - check import logs.")
+    raise ImportError("from _c_minimum_distance_by_tests did not load - check import logs.")
 
 
 def minimum_distance(
@@ -244,12 +235,10 @@ def minimum_distance(
         raise QiskitQECError(f"method {method} is not supported.")
     if symplectic.is_stabilizer_group(stabilizer_or_gauge):
         stabilizer = stabilizer_or_gauge
-        gauge = stabilizer_or_gauge
     else:
         stabilizer = symplectic.center(stabilizer_or_gauge)
-        gauge = stabilizer_or_gauge
-
-    if C_MIN_DISTANCE and try_compiled is True:
+    gauge = stabilizer_or_gauge
+    if C_MIN_DISTANCE and try_compiled:
         inputform1 = stabilizer.astype(np.int32).tolist()
         inputform2 = gauge.astype(np.int32).tolist()
         if method == method_enumerate:

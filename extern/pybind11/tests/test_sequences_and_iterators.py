@@ -19,15 +19,15 @@ def test_slice_constructors_explicit_optional():
 def test_generalized_iterators():
     assert list(m.IntPairs([(1, 2), (3, 4), (0, 5)]).nonzero()) == [(1, 2), (3, 4)]
     assert list(m.IntPairs([(1, 2), (2, 0), (0, 3), (4, 5)]).nonzero()) == [(1, 2)]
-    assert list(m.IntPairs([(0, 3), (1, 2), (3, 4)]).nonzero()) == []
+    assert not list(m.IntPairs([(0, 3), (1, 2), (3, 4)]).nonzero())
 
     assert list(m.IntPairs([(1, 2), (3, 4), (0, 5)]).nonzero_keys()) == [1, 3]
     assert list(m.IntPairs([(1, 2), (2, 0), (0, 3), (4, 5)]).nonzero_keys()) == [1]
-    assert list(m.IntPairs([(0, 3), (1, 2), (3, 4)]).nonzero_keys()) == []
+    assert not list(m.IntPairs([(0, 3), (1, 2), (3, 4)]).nonzero_keys())
 
     assert list(m.IntPairs([(1, 2), (3, 4), (0, 5)]).nonzero_values()) == [2, 4]
     assert list(m.IntPairs([(1, 2), (2, 0), (0, 3), (4, 5)]).nonzero_values()) == [2]
-    assert list(m.IntPairs([(0, 3), (1, 2), (3, 4)]).nonzero_values()) == []
+    assert not list(m.IntPairs([(0, 3), (1, 2), (3, 4)]).nonzero_values())
 
     # __next__ must continue to raise StopIteration
     it = m.IntPairs([(0, 0)]).nonzero()
@@ -127,7 +127,7 @@ def test_sequence():
     assert rev2 == approx(expected, rel=1e-05)
     assert rev == rev2
 
-    rev[0::2] = m.Sequence([2.0, 2.0, 2.0])
+    rev[::2] = m.Sequence([2.0, 2.0, 2.0])
     assert cstats.values() == ["of size", "3", "from std::vector"]
 
     assert rev == approx([2, 56.78, 2, 0, 2], rel=1e-05)
@@ -245,7 +245,7 @@ def test_iterator_rvp():
 
 def test_carray_iterator():
     """#4100: Check for proper iterator overload with C-Arrays"""
-    args_gt = list(float(i) for i in range(3))
+    args_gt = [float(i) for i in range(3)]
     arr_h = m.CArrayHolder(*args_gt)
     args = list(arr_h)
     assert args_gt == args

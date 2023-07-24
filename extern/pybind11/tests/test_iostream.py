@@ -25,7 +25,7 @@ def test_captured(capsys):
 def test_captured_large_string(capsys):
     # Make this bigger than the buffer used on the C++ side: 1024 chars
     msg = "I've been redirected to Python, I hope!"
-    msg = msg * (1024 // len(msg) + 1)
+    msg *= 1024 // len(msg) + 1
 
     m.captured_output_default(msg)
     stdout, stderr = capsys.readouterr()
@@ -274,13 +274,7 @@ def test_redirect_both(capfd):
 
 def test_threading():
     with m.ostream_redirect(stdout=True, stderr=False):
-        # start some threads
-        threads = []
-
-        # start some threads
-        for _j in range(20):
-            threads.append(m.TestThread())
-
+        threads = [m.TestThread() for _j in range(20)]
         # give the threads some time to fail
         threads[0].sleep()
 
@@ -290,6 +284,3 @@ def test_threading():
 
         for t in threads:
             t.join()
-
-        # if a thread segfaults, we don't get here
-        assert True

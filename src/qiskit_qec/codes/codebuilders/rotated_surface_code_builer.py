@@ -100,32 +100,28 @@ class RotatedSurfaceCodeBuilder(Builder):
             def _weight_len(path: List) -> int:
                 """Find the weight of the operator from the vertex path listing"""
                 length = len(path)
-                if path[0] == path[-1] and length > 1:
-                    return length - 1
-                return length
+                return length - 1 if path[0] == path[-1] and length > 1 else length
 
             weights = [_weight_len(path) for path in vertex_paths]
             weight = sum(weights)
-            # Exclude any operator that is not of weight 2
             if weight != 2:
                 return False
-            else:
-                v0_pos = vertex_paths[0][0].pos
-                v1_pos = vertex_paths[0][1].pos
-                if abs(v0_pos[0] - v1_pos[0]) < 0.01:  # vertical line
-                    if (
-                        abs(v0_pos[0] - self.cutter_ex.bounds.min[0]) < 0.01
-                        or abs(v0_pos[0] - self.cutter_ex.bounds.max[0]) < 0.01
-                    ):
-                        if qubit_data.operator[vertex_paths[0][0].id][0] == self.nul_op:
-                            return True
-                elif abs(v0_pos[1] - v1_pos[1]) < 0.01:  # horizontal line
-                    if (
-                        abs(v0_pos[1] - self.cutter_ex.bounds.min[1]) < 0.01
-                        or abs(v0_pos[1] - self.cutter_ex.bounds.max[1]) < 0.01
-                    ):
-                        if qubit_data.operator[vertex_paths[0][0].id][0] == self.ul_op:
-                            return True
+            v0_pos = vertex_paths[0][0].pos
+            v1_pos = vertex_paths[0][1].pos
+            if abs(v0_pos[0] - v1_pos[0]) < 0.01:  # vertical line
+                if (
+                    abs(v0_pos[0] - self.cutter_ex.bounds.min[0]) < 0.01
+                    or abs(v0_pos[0] - self.cutter_ex.bounds.max[0]) < 0.01
+                ):
+                    if qubit_data.operator[vertex_paths[0][0].id][0] == self.nul_op:
+                        return True
+            elif abs(v0_pos[1] - v1_pos[1]) < 0.01:  # horizontal line
+                if (
+                    abs(v0_pos[1] - self.cutter_ex.bounds.min[1]) < 0.01
+                    or abs(v0_pos[1] - self.cutter_ex.bounds.max[1]) < 0.01
+                ):
+                    if qubit_data.operator[vertex_paths[0][0].id][0] == self.ul_op:
+                        return True
             return False
 
         self.exclude = exclude

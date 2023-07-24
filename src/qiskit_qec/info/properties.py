@@ -83,13 +83,13 @@ class Properties:
     def __str__(self) -> str:
         info_str = ""
         for key, value in self.properties.items():
-            info_str = info_str + f"{key:20} : {value}" + "\n"
+            info_str = f"{info_str}{key:20} : {value}" + "\n"
         return info_str
 
     def __repr__(self):
         info_str = "{"
         for key, value in self.properties.items():
-            info_str = info_str + f"{key:20} : {value}," + "\n"
+            info_str = f"{info_str}{key:20} : {value}," + "\n"
         return info_str + "}"
 
     def __getitem__(self, value):
@@ -108,4 +108,4 @@ class Properties:
         )
         line = "-" * 79
         print(line)
-        print(str(self))
+        print(self)

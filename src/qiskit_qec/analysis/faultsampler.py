@@ -96,13 +96,11 @@ class FaultSampler:
         # Construct list of tuples of topologically sorted nodes
         # (node, faulty?, index)
         self.tagged_nodes = []
-        index = 0
-        for node in self.dag.topological_op_nodes():
+        for index, node in enumerate(self.dag.topological_op_nodes()):
             if node_name_label(node) in self.location_types:
                 self.tagged_nodes.append((node, True, index))
             else:
                 self.tagged_nodes.append((node, False, index))
-            index += 1
 
     def _faulty_circuit(self, comb: Tuple[DAGNode], error: Tuple[str]) -> QuantumCircuit:
         """Construct faulty QuantumCircuit with the given faults.
@@ -145,10 +143,7 @@ class FaultSampler:
 
         def gint(c):
             # Casts to int if possible
-            if c.isnumeric():
-                return int(c)
-            else:
-                return c
+            return int(c) if c.isnumeric() else c
 
         result = execute(
             circ,
@@ -219,9 +214,4 @@ class FaultSampler:
         if self.use_compiled:
             return self.faultsamp.sample(blocksize)
         else:
-            block = []
-            count = 0
-            while count < blocksize:
-                block.append(self.sample_one())
-                count += 1
-            return block
+            return [self.sample_one() for _ in range(blocksize)]

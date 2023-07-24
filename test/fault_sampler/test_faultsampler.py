@@ -34,11 +34,7 @@ class TestFaultSampler(unittest.TestCase):
         fs = FaultSampler(qc, model=pnm, method="stabilizer", sim_seed=0)
         num_samples = 1000
         fault_paths = list(fs.sample(num_samples))
-        # Test probability circuit output is incorrect
-        failures = 0
-        for event in fault_paths:
-            if event[3] == [0, 1] or event[3] == [1, 0]:
-                failures += 1
+        failures = sum(1 for event in fault_paths if event[3] in [[0, 1], [1, 0]])
         # cx fails with ix or xi OR special fails OR cx fails with xx and special fails
         pfail = 5.0 / 3.0 * p * (1 - p) + 1.0 / 3.0 * p**2
         self.assertAlmostEqual(failures / num_samples, pfail, 1)
@@ -50,8 +46,8 @@ class TestFaultSampler(unittest.TestCase):
                 num_faults[failures] = 1
             else:
                 num_faults[failures] += 1
-        for key in num_faults:
-            num_faults[key] /= num_samples
+        for value_ in num_faults.values():
+            value_ /= num_samples
         limit = {0: (1 - p) ** 3, 1: 3 * p * (1 - p) ** 2, 2: 3 * p**2 * (1 - p), 3: p**3}
         for key, value in num_faults.items():
             self.assertAlmostEqual(value, limit[key], 1)
@@ -81,11 +77,7 @@ class TestFaultSampler(unittest.TestCase):
         fs = FaultSampler(qc, model=pnm, method="propagator", sim_seed=0)
         num_samples = 10000
         fault_paths = list(fs.sample(num_samples))
-        # Test probability circuit output is incorrect
-        failures = 0
-        for event in fault_paths:
-            if event[3] == [0, 1] or event[3] == [1, 0]:
-                failures += 1
+        failures = sum(1 for event in fault_paths if event[3] in [[0, 1], [1, 0]])
         # cx fails with ix or xi OR special fails OR cx fails with xx and special fails
         pfail = 5.0 / 3.0 * p * (1 - p) + 1.0 / 3.0 * p**2
         self.assertAlmostEqual(failures / num_samples, pfail, 1)
@@ -97,8 +89,8 @@ class TestFaultSampler(unittest.TestCase):
                 num_faults[failures] = 1
             else:
                 num_faults[failures] += 1
-        for key in num_faults:
-            num_faults[key] /= num_samples
+        for value_ in num_faults.values():
+            value_ /= num_samples
         limit = {0: (1 - p) ** 3, 1: 3 * p * (1 - p) ** 2, 2: 3 * p**2 * (1 - p), 3: p**3}
         for key, value in num_faults.items():
             self.assertAlmostEqual(value, limit[key], 1)
@@ -115,10 +107,7 @@ class TestFaultSampler(unittest.TestCase):
         fs = FaultSampler(qc, model=model, method="stabilizer", sim_seed=0)
         # pylint: disable=c-extension-no-member
         block = fs.sample(1000)
-        failures = 0
-        for x in block:
-            if x[3][0] == 1:
-                failures += 1
+        failures = sum(1 for x in block if x[3][0] == 1)
         failures /= 1000
         self.assertAlmostEqual(failures, 0.2 * 2.0 / 3.0, 1)
 
@@ -134,10 +123,7 @@ class TestFaultSampler(unittest.TestCase):
         fs = FaultSampler(qc, model=model, method="propagator", sim_seed=0)
         # pylint: disable=c-extension-no-member
         block = fs.sample(10000)
-        failures = 0
-        for x in block:
-            if x[3][0] == 1:
-                failures += 1
+        failures = sum(1 for x in block if x[3][0] == 1)
         failures /= 10000
         self.assertAlmostEqual(failures, 0.2 * 2.0 / 3.0, 1)
 

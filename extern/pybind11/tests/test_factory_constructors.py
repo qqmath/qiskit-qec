@@ -312,7 +312,7 @@ def test_no_placement_new(capture):
     with capture:
         del a
         pytest.gc_collect()
-    assert capture == "operator delete called on " + found.group(1)
+    assert capture == f"operator delete called on {found[1]}"
 
     with capture:
         b = m.NoPlacementNew()
@@ -323,7 +323,7 @@ def test_no_placement_new(capture):
     with capture:
         del b
         pytest.gc_collect()
-    assert capture == "operator delete called on " + found.group(1)
+    assert capture == f"operator delete called on {found[1]}"
 
 
 def test_multiple_inheritance():

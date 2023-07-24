@@ -28,8 +28,7 @@ def build_expected_version_hex(matches: Dict[str, str]) -> str:
     serial = None
     major = int(matches["MAJOR"])
     minor = int(matches["MINOR"])
-    flds = patch_level_serial.split(".")
-    if flds:
+    if flds := patch_level_serial.split("."):
         patch = int(flds[0])
         if len(flds) == 1:
             level = "0"

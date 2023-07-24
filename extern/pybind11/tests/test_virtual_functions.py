@@ -189,16 +189,18 @@ def test_alias_delay_initialization2(capture):
     not hasattr(m, "NCVirt"), reason="NCVirt does not work on Intel/PGI/NVCC compilers"
 )
 def test_move_support():
+
+
+
     class NCVirtExt(m.NCVirt):
         def get_noncopyable(self, a, b):
-            # Constructs and returns a new instance:
-            nc = m.NonCopyable(a * a, b * b)
-            return nc
+            return m.NonCopyable(a * a, b * b)
 
         def get_movable(self, a, b):
             # Return a referenced copy
             self.movable = m.Movable(a, b)
             return self.movable
+
 
     class NCVirtExt2(m.NCVirt):
         def get_noncopyable(self, a, b):

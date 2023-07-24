@@ -89,31 +89,26 @@ class TileCodeFactory:
         """
         self.name = name if name is not None else "TileCodeFactory"
 
-        self.configured = {}
-
-        # Manifold setting
-        self.configured["manifold"] = False
         self.manifold = None
 
-        # Tile setting
-        self.configured["tile"] = False
         self.tile = None
         self.tile_optype = None
 
-        # Lattice setting
-        self.configured["lattice"] = False
         self.lattice = None
 
-        # Cutter
-        self.configured["cutter"] = False
         self.cutter = None
         self.on_boundary = None
 
         # Exclude
         self.exclude = None
 
-        # Boundary settings
-        self.configured["boundary"] = False
+        self.configured = {
+            "manifold": False,
+            "tile": False,
+            "lattice": False,
+            "cutter": False,
+            "boundary": False,
+        }
         self.boundary_strategy = None
         self.levels = None
         self.inside_levels = None

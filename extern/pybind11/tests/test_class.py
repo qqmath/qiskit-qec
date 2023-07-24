@@ -6,10 +6,7 @@ from pybind11_tests import class_ as m
 
 
 def test_obj_class_name():
-    if env.PYPY:
-        expected_name = "UserType"
-    else:
-        expected_name = "pybind11_tests.UserType"
+    expected_name = "UserType" if env.PYPY else "pybind11_tests.UserType"
     assert m.obj_class_name(UserType(1)) == expected_name
     assert m.obj_class_name(UserType) == expected_name
 
@@ -151,19 +148,19 @@ def test_qualname(doc):
 
 def test_inheritance(msg):
     roger = m.Rabbit("Rabbit")
-    assert roger.name() + " is a " + roger.species() == "Rabbit is a parrot"
+    assert f"{roger.name()} is a {roger.species()}" == "Rabbit is a parrot"
     assert m.pet_name_species(roger) == "Rabbit is a parrot"
 
     polly = m.Pet("Polly", "parrot")
-    assert polly.name() + " is a " + polly.species() == "Polly is a parrot"
+    assert f"{polly.name()} is a {polly.species()}" == "Polly is a parrot"
     assert m.pet_name_species(polly) == "Polly is a parrot"
 
     molly = m.Dog("Molly")
-    assert molly.name() + " is a " + molly.species() == "Molly is a dog"
+    assert f"{molly.name()} is a {molly.species()}" == "Molly is a dog"
     assert m.pet_name_species(molly) == "Molly is a dog"
 
     fred = m.Hamster("Fred")
-    assert fred.name() + " is a " + fred.species() == "Fred is a rodent"
+    assert f"{fred.name()} is a {fred.species()}" == "Fred is a rodent"
 
     assert m.dog_bark(molly) == "Woof!"
 
@@ -221,7 +218,7 @@ def test_automatic_upcasting():
 
 
 def test_isinstance():
-    objects = [tuple(), dict(), m.Pet("Polly", "parrot")] + [m.Dog("Molly")] * 4
+    objects = [tuple(), {}, m.Pet("Polly", "parrot")] + [m.Dog("Molly")] * 4
     expected = (True, True, True, True, True, False, False)
     assert m.check_instances(objects) == expected
 
@@ -288,7 +285,7 @@ def test_operator_new_delete(capture):
     with capture:
         c = m.AliasedHasOpNewDelSize()
         c2 = SubAliased()
-    assert capture == ("C new " + sz_noalias + "\n" + "C new " + sz_alias + "\n")
+    assert capture == f"C new {sz_noalias}" + "\n" + "C new " + sz_alias + "\n"
 
     with capture:
         del a
@@ -311,7 +308,10 @@ def test_operator_new_delete(capture):
         pytest.gc_collect()
         del c2
         pytest.gc_collect()
-    assert capture == ("C delete " + sz_noalias + "\n" + "C delete " + sz_alias + "\n")
+    assert (
+        capture
+        == f"C delete {sz_noalias}" + "\n" + "C delete " + sz_alias + "\n"
+    )
 
 
 def test_bind_protected_functions():

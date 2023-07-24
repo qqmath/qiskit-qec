@@ -100,24 +100,21 @@ class HeavyHexCodeBuilder(Builder):
         def exclude(vertex_paths: List[List[Vertex]], qubit_data: QubitData) -> bool:
             def _weight_len(path: List) -> int:
                 length = len(path)
-                if path[0] == path[-1] and length > 1:
-                    return length - 1
-                return length
+                return length - 1 if path[0] == path[-1] and length > 1 else length
 
             weights = [_weight_len(path) for path in vertex_paths]
             weight = sum(weights)
             if weight != 2:
                 return False
-            else:
-                v0_pos = vertex_paths[0][0].pos
-                v1_pos = vertex_paths[0][1].pos
-                if abs(v0_pos[0] - v1_pos[0]) < 0.01:
-                    if (
-                        abs(v0_pos[0] - self.cutter_ex.bounds.min[0]) < 0.01
-                        or abs(v0_pos[0] - self.cutter_ex.bounds.max[0]) < 0.01
-                    ):
-                        if qubit_data.operator[vertex_paths[0][0].id][0] == self.w4_op:
-                            return True
+            v0_pos = vertex_paths[0][0].pos
+            v1_pos = vertex_paths[0][1].pos
+            if abs(v0_pos[0] - v1_pos[0]) < 0.01:
+                if (
+                    abs(v0_pos[0] - self.cutter_ex.bounds.min[0]) < 0.01
+                    or abs(v0_pos[0] - self.cutter_ex.bounds.max[0]) < 0.01
+                ):
+                    if qubit_data.operator[vertex_paths[0][0].id][0] == self.w4_op:
+                        return True
             return False
 
         self.exclude = exclude

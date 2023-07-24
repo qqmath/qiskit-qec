@@ -158,6 +158,7 @@ def test_multiple_inheritance_python():
 
 
 def test_multiple_inheritance_python_many_bases():
+
     class MIMany14(m.BaseN1, m.BaseN2, m.BaseN3, m.BaseN4):
         def __init__(self):
             m.BaseN1.__init__(self, 1)
@@ -208,22 +209,22 @@ def test_multiple_inheritance_python_many_bases():
     # Inherits from 4 registered C++ classes: can fit in one pointer on any modern arch:
     a = MIMany14()
     for i in range(1, 4):
-        assert getattr(a, "f" + str(i))() == 2 * i
+        assert getattr(a, f"f{str(i)}")() == 2 * i
 
     # Inherits from 8: requires 1/2 pointers worth of holder flags on 32/64-bit arch:
     b = MIMany916()
     for i in range(9, 16):
-        assert getattr(b, "f" + str(i))() == 2 * i
+        assert getattr(b, f"f{str(i)}")() == 2 * i
 
     # Inherits from 9: requires >= 2 pointers worth of holder flags
     c = MIMany19()
     for i in range(1, 9):
-        assert getattr(c, "f" + str(i))() == 2 * i
+        assert getattr(c, f"f{str(i)}")() == 2 * i
 
     # Inherits from 17: requires >= 3 pointers worth of holder flags
     d = MIMany117()
     for i in range(1, 17):
-        assert getattr(d, "f" + str(i))() == 2 * i
+        assert getattr(d, f"f{str(i)}")() == 2 * i
 
 
 def test_multiple_inheritance_virtbase():

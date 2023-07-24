@@ -131,16 +131,13 @@ class Pybind11Extension(_Extension):  # type: ignore[misc]
         # Include the installed package pybind11 headers
         if include_pybind11:
             # If using setup_requires, this fails the first time - that's okay
-            try:
+            with contextlib.suppress(ModuleNotFoundError):
                 import pybind11
 
                 pyinc = pybind11.get_include()
 
                 if pyinc not in self.include_dirs:
                     self.include_dirs.append(pyinc)
-            except ModuleNotFoundError:
-                pass
-
         self.cxx_std = cxx_std
 
         cflags = []
@@ -319,7 +316,7 @@ def intree_extensions(
                 relname, _ = os.path.splitext(os.path.relpath(path, parent))
                 qualified_name = relname.replace(os.path.sep, ".")
                 if prefix:
-                    qualified_name = prefix + "." + qualified_name
+                    qualified_name = f"{prefix}.{qualified_name}"
                 exts.append(Pybind11Extension(qualified_name, [path]))
                 break
         else:

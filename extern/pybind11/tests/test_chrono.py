@@ -8,9 +8,9 @@ from pybind11_tests import chrono as m
 
 def test_chrono_system_clock():
     # Get the time from both c++ and datetime
-    date0 = datetime.datetime.today()
+    date0 = datetime.datetime.now()
     date1 = m.test_chrono1()
-    date2 = datetime.datetime.today()
+    date2 = datetime.datetime.now()
 
     # The returned value should be a datetime
     assert isinstance(date1, datetime.datetime)
@@ -28,7 +28,7 @@ def test_chrono_system_clock():
 
 
 def test_chrono_system_clock_roundtrip():
-    date1 = datetime.datetime.today()
+    date1 = datetime.datetime.now()
 
     # Roundtrip the time
     date2 = m.test_chrono2(date1)
@@ -75,19 +75,7 @@ SKIP_TZ_ENV_ON_WIN = pytest.mark.skipif(
 )
 
 
-@pytest.mark.parametrize(
-    "time1",
-    [
-        datetime.datetime.today().time(),
-        datetime.time(0, 0, 0),
-        datetime.time(0, 0, 0, 1),
-        datetime.time(0, 28, 45, 109827),
-        datetime.time(0, 59, 59, 999999),
-        datetime.time(1, 0, 0),
-        datetime.time(5, 59, 59, 0),
-        datetime.time(5, 59, 59, 1),
-    ],
-)
+@pytest.mark.parametrize("time1", [datetime.datetime.now().time(), datetime.time(0, 0, 0), datetime.time(0, 0, 0, 1), datetime.time(0, 28, 45, 109827), datetime.time(0, 59, 59, 999999), datetime.time(1, 0, 0), datetime.time(5, 59, 59, 0), datetime.time(5, 59, 59, 1)])
 @pytest.mark.parametrize(
     "tz",
     [
@@ -122,8 +110,8 @@ def test_chrono_system_clock_roundtrip_time(time1, tz, monkeypatch):
 
 def test_chrono_duration_roundtrip():
     # Get the difference between two times (a timedelta)
-    date1 = datetime.datetime.today()
-    date2 = datetime.datetime.today()
+    date1 = datetime.datetime.now()
+    date2 = datetime.datetime.now()
     diff = date2 - date1
 
     # Make sure this is a timedelta
@@ -141,8 +129,8 @@ def test_chrono_duration_roundtrip():
 
 
 def test_chrono_duration_subtraction_equivalence():
-    date1 = datetime.datetime.today()
-    date2 = datetime.datetime.today()
+    date1 = datetime.datetime.now()
+    date2 = datetime.datetime.now()
 
     diff = date2 - date1
     cpp_diff = m.test_chrono4(date2, date1)

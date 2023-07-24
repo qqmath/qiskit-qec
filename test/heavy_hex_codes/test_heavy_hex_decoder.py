@@ -69,10 +69,7 @@ class TestHHCDecoder(unittest.TestCase):
         for faultpath in fe.generate():
             outcome = faultpath[3]
             corrected_outcomes = dec.process(outcome)
-            if xbasis:
-                fail = temp_syndrome(corrected_outcomes, [range(code.n)])
-            else:
-                fail = temp_syndrome(corrected_outcomes, [range(code.n)])
+            fail = temp_syndrome(corrected_outcomes, [range(code.n)])
             if fail[0] != good:
                 failures += 1
                 print(good, fail, faultpath, corrected_outcomes)
@@ -96,10 +93,7 @@ class TestHHCDecoder(unittest.TestCase):
         for outcome, _ in counts.items():
             reversed_outcome = list(map(int, outcome[::-1]))
             corrected_outcomes = dec.process(reversed_outcome)
-            if xbasis:
-                fail = temp_syndrome(corrected_outcomes, [range(code.n)])
-            else:
-                fail = temp_syndrome(corrected_outcomes, [range(code.n)])
+            fail = temp_syndrome(corrected_outcomes, [range(code.n)])
             if fail[0] != good:
                 print(good, fail, reversed_outcome, corrected_outcomes)
                 failures += 1

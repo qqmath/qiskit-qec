@@ -27,7 +27,7 @@ class TestPyMatchingMatcher(unittest.TestCase):
         node = DecodingGraphNode(is_boundary=True, qubits=[], index=0)
         node.properties["highlighted"] = False
         graph.add_node(node)
-        idxmap[(0, tuple([]))] = 4
+        idxmap[0, ()] = 4
         for dat in [[[0], 0, 4], [[1], 0, 1], [[2], 1, 2], [[3], 2, 3], [[4], 3, 4]]:
             edge = DecodingGraphEdge(
                 qubits=dat[0],
@@ -47,7 +47,7 @@ class TestPyMatchingMatcher(unittest.TestCase):
         self.m.preprocess(graph)
         highlighted = [(0, (0, 1)), (0, (1, 2)), (0, (3, 4)), (0, ())]  # must be even
         qubit_errors, measurement_errors = self.m.find_errors(graph, idxmap, highlighted)
-        self.assertEqual(qubit_errors, set([1, 4]))
+        self.assertEqual(qubit_errors, {1, 4})
         self.assertEqual(measurement_errors, set())
 
 

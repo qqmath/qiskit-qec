@@ -47,10 +47,7 @@ class PauliNoiseModel:
 
     def get_pauli_error_types(self):
         """Return a dict of error types for each operation."""
-        error_types = {}
-        for k, v in self.definition.items():
-            error_types[k] = list(v.keys())
-        return error_types
+        return {k: list(v.keys()) for k, v in self.definition.items()}
 
     def get_error_probability(self, name: str):
         """Get the error probability of an operation."""
@@ -119,7 +116,7 @@ class PauliNoiseModel:
         Each paulistring contains "i", "x", "y", and "z".
         The weights do not need to be normalized.
         """
-        if len(paulichanneldict) == 0:
+        if not paulichanneldict:
             raise Exception("expected non-empty dictionary")
         # Check input and compute total weight
         total_weight = 0
@@ -136,7 +133,7 @@ class PauliNoiseModel:
         self.definition[name] = copy.deepcopy(paulichanneldict)
         self.num_qubits[name] = num_qubits
         # Normalize weights
-        for k in paulichanneldict.keys():
+        for k in paulichanneldict:
             self.definition[name][k] /= total_weight
 
     def as_aer_noise_model(self):
@@ -147,8 +144,10 @@ class PauliNoiseModel:
                 raise Exception(f'no error probability for "{name}"')
             p = self.error_probabilities[name]
             terms = [("I" * self.num_qubits[name], 1.0 - p)]
-            for pauli, weight in paulichanneldict.items():
-                terms.append((pauli.upper(), weight * p))
+            terms.extend(
+                (pauli.upper(), weight * p)
+                for pauli, weight in paulichanneldict.items()
+            )
             # Create the noise operator and add to the model
             if name == "measure":
                 # Measurement is a special case

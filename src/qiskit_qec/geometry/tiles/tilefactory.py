@@ -45,7 +45,7 @@ class TileFactory:
         # Qubits
 
         if qubit_count is not None and qubit_data is not None:
-            qubits = [qubit_count.new_qubit() for i in range(num_qubits)]
+            qubits = [qubit_count.new_qubit() for _ in range(num_qubits)]
 
         # Create Shell
         wf_id_to_index = {}
@@ -68,7 +68,7 @@ class TileFactory:
                     )
                     wfs.append(wf)
                     wf_id_to_index[wf.id] = wf_index
-            if len(wfs) != 0:
+            if wfs:
                 faces.append(Face(wfs))
 
         shell = Shell(faces)
@@ -95,7 +95,7 @@ class TileFactory:
         # Wireframe Data
         prefix = "wf_"
         object_arrays = {key: array for key, array in kwargs.items() if key.startswith(prefix)}
-        for name in object_arrays.keys():
+        for name in object_arrays:
             qubit_data.add_data_array(data_array={}, name=name)
         for wf in shell.wireframes:
             for name, array in object_arrays.items():

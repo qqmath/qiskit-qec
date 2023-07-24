@@ -35,9 +35,7 @@ class PyMatchingMatcher(BaseMatcher):
         nxgraph = ret2net(graph)
         for edge in nxgraph.edges(data=True):
             if edge[2]["qubits"]:
-                qset = set()
-                for q in edge[2]["qubits"]:
-                    qset.add(self.indexer[q])
+                qset = {self.indexer[q] for q in edge[2]["qubits"]}
                 edge[2]["qubit_id"] = tuple(qset)[0] if len(qset) == 1 else tuple(qset)
             else:
                 edge[2]["qubit_id"] = -1
@@ -57,9 +55,10 @@ class PyMatchingMatcher(BaseMatcher):
             correction = self.pymatching.decode(syndrome)
         except AttributeError as attrib_error:
             raise QiskitQECError("Did you call preprocess?") from attrib_error
-        qubit_errors = []
-        for i, corr in enumerate(correction):
-            if corr == 1:
-                qubit_errors.append(self.indexer.rlookup(i))
+        qubit_errors = [
+            self.indexer.rlookup(i)
+            for i, corr in enumerate(correction)
+            if corr == 1
+        ]
         logging.info("qubit_errors = %s", qubit_errors)
         return set(qubit_errors), set()

@@ -83,11 +83,11 @@ class Screen:
         """
 
         width = int(size[0] / pixel_width)
-        wide = str(7 * width + 24) + "px"
-        wider = str(pixel_width * width + (pixel_width - 1) * 4) + "px"
-        width = str(width) + "px"
-        height = str(int(size[1] / pixel_width)) + "px"
-        width = str(int(50 * 8 / pixel_width)) + "px"
+        wide = f"{str(7 * width + 24)}px"
+        wider = f"{str(pixel_width * width + (pixel_width - 1) * 4)}px"
+        width = f"{width}px"
+        height = f"{int(size[1] / pixel_width)}px"
+        width = f"{int(50 * 8 / pixel_width)}px"
 
         self._layout = Layout(width=width, height=height)
         self._wide_layout = Layout(width=wide, height=height)
@@ -121,8 +121,11 @@ class QiskitGameEngine:
         self.screen = Screen((400, 400), active_screen, pixel_width=size)
         layout = self.screen._layout
 
-        controller = {}
-        controller["blank"] = widgets.ToggleButton(description="", button_style="", layout=layout)
+        controller = {
+            "blank": widgets.ToggleButton(
+                description="", button_style="", layout=layout
+            )
+        }
         controller["up"] = widgets.ToggleButton(description="▲", button_style="", layout=layout)
         controller["down"] = widgets.ToggleButton(description="▼", button_style="", layout=layout)
         controller["left"] = widgets.ToggleButton(description="◀︎", button_style="", layout=layout)
@@ -148,13 +151,12 @@ class QiskitGameEngine:
             controller["next"],
         ]
 
-        interface = []
-        interface.append(
+        interface = [
             widgets.HBox(
                 [self.screen.pixel[x, 0].button for x in range(size)]
                 + [blank, up, blank, blank, blank, x_button, blank]
             )
-        )
+        ]
         interface.append(
             widgets.HBox(
                 [self.screen.pixel[x, 1].button for x in range(size)]
@@ -170,8 +172,10 @@ class QiskitGameEngine:
         interface.append(
             widgets.HBox([self.screen.pixel[x, 3].button for x in range(size)] + [next_button])
         )
-        for y in range(4, size):
-            interface.append(widgets.HBox([self.screen.pixel[x, y].button for x in range(size)]))
+        interface.extend(
+            widgets.HBox([self.screen.pixel[x, y].button for x in range(size)])
+            for y in range(4, size)
+        )
         interface.append(self.screen.pixel["text"].button)
 
         self.controller = controller

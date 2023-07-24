@@ -61,11 +61,7 @@ class GaugeGroup(Group):
 
         self.generators = generators
         self._with_generators = with_generators
-        if name is None:
-            self.name = ""
-        else:
-            self.name = name
-
+        self.name = "" if name is None else name
         super().__init__()
 
     @property
