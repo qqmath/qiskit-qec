@@ -90,8 +90,7 @@ class CSSCodeCircuit(CodeCircuit):
             states += ["0n", "1n"]
         for state in states:
             qc = QuantumCircuit()
-            qregs = []
-            qregs.append(QuantumRegister(code.n, name="code qubits"))
+            qregs = [QuantumRegister(code.n, name="code qubits")]
             qregs.append(QuantumRegister(len(self.z_gauges), name="z auxs"))
             qregs.append(QuantumRegister(len(self.x_gauges), name="x auxs"))
             for qreg in qregs:
@@ -120,10 +119,11 @@ class CSSCodeCircuit(CodeCircuit):
         for j in range(2):
             self._gauges4stabilizers.append([])
             for stabilizer in self._stabilizers[j]:
-                gauges = []
-                for g, gauge in enumerate(self._gauges[j]):
-                    if set(stabilizer).intersection(set(gauge)) == set(gauge):
-                        gauges.append(g)
+                gauges = [
+                    g
+                    for g, gauge in enumerate(self._gauges[j])
+                    if set(stabilizer).intersection(set(gauge)) == set(gauge)
+                ]
                 self._gauges4stabilizers[j].append(gauges)
 
     def _get_code_properties(self):
@@ -160,16 +160,15 @@ class CSSCodeCircuit(CodeCircuit):
                     if combined.count(q) % 2:
                         stabilizers[j][-1].append(q)
 
-            if is_css:
-                self.x_gauges = gauges[0]
-                self.z_gauges = gauges[1]
-                self.x_stabilizers = stabilizers[0]
-                self.z_stabilizers = stabilizers[1]
-                self.logical_x = logicals[0]
-                self.logical_z = logicals[1]
-            else:
+            if not is_css:
                 raise QiskitQECError("Code is not obviously CSS.")
 
+            self.x_gauges = gauges[0]
+            self.z_gauges = gauges[1]
+            self.x_stabilizers = stabilizers[0]
+            self.z_stabilizers = stabilizers[1]
+            self.logical_x = logicals[0]
+            self.logical_z = logicals[1]
         else:
             # otherwise assume it has the info
             self.x_gauges = self.code.x_gauges
@@ -202,7 +201,7 @@ class CSSCodeCircuit(CodeCircuit):
                 self._z_gauge_measurements(qc, t, state)
             else:
                 raise NotImplementedError(
-                    "Round schedule " + self.round_schedule + " not supported."
+                    f"Round schedule {self.round_schedule} not supported."
                 )
 
     def _final_readout(self, qc, qregs, creg, state):
@@ -214,7 +213,7 @@ class CSSCodeCircuit(CodeCircuit):
         qc.measure(qregs[0], creg)
 
     def _z_gauge_measurements(self, qc, t, state):
-        creg = ClassicalRegister(len(self.z_gauges), name="round_" + str(t) + "_z_bits")
+        creg = ClassicalRegister(len(self.z_gauges), name=f"round_{str(t)}_z_bits")
         qc.add_register(creg)
         for g, z_gauge in enumerate(self.z_gauges):
             for q in z_gauge:
@@ -225,7 +224,7 @@ class CSSCodeCircuit(CodeCircuit):
             qc.reset(qc.qregs[1][g])
 
     def _x_gauge_measurements(self, qc, t, state):
-        creg = ClassicalRegister(len(self.x_gauges), name="round_" + str(t) + "_x_bits")
+        creg = ClassicalRegister(len(self.x_gauges), name=f"round_{str(t)}_x_bits")
         qc.add_register(creg)
         for g, x_gauge in enumerate(self.x_gauges):
             for q in x_gauge:
@@ -271,9 +270,7 @@ class CSSCodeCircuit(CodeCircuit):
             for t in range(self.T):
                 round_outs = []
                 for gs in self._gauges4stabilizers[j]:
-                    out = 0
-                    for g in gs:
-                        out += gauge_outs[j][t][g]
+                    out = sum(gauge_outs[j][t][g] for g in gs)
                     out = out % 2
                     round_outs.append(out)
                 stabilizer_outs[j].append(round_outs)
@@ -282,16 +279,12 @@ class CSSCodeCircuit(CodeCircuit):
         j = bases.index(self.basis)
         final_gauges = []
         for gauge in self._gauges[j]:
-            out = 0
-            for q in gauge:
-                out += final_outs[-q - 1]
+            out = sum(final_outs[-q - 1] for q in gauge)
             out = out % 2
             final_gauges.append(out)
         final_stabilizers = []
         for gs in self._gauges4stabilizers[j]:
-            out = 0
-            for g in gs:
-                out += final_gauges[g]
+            out = sum(final_gauges[g] for g in gs)
             out = out % 2
             final_stabilizers.append(out)
         stabilizer_outs[j].append(final_stabilizers)
@@ -318,15 +311,9 @@ class CSSCodeCircuit(CodeCircuit):
                         node.properties["basis"] = bases[j]
                         nodes.append(node)
 
-        if self.basis == "x":
-            logicals = self.logical_x
-        else:
-            logicals = self.logical_z
-
+        logicals = self.logical_x if self.basis == "x" else self.logical_z
         for index, logical_op in enumerate(logicals):
-            logical_out = 0
-            for q in logical_op:
-                logical_out += final_outs[-q - 1]
+            logical_out = sum(final_outs[-q - 1] for q in logical_op)
             logical_out = logical_out % 2
 
             if all_logicals or str(logical_out) != logical:
@@ -361,30 +348,28 @@ class CSSCodeCircuit(CodeCircuit):
         ## 0th round of measurements
         if self.basis == "x":
             for stabind, stabilizer in enumerate(self.x_stabilizers):
-                record_targets = []
-                for gauge_ind in self._gauges4stabilizers[0][stabind]:
-                    record_targets.append(
-                        StimTarget_rec(
-                            measurement_round_offset[0]
-                            + gauge_ind
-                            - (self.T * measurements_per_cycle + self.code.n)
-                        )
+                record_targets = [
+                    StimTarget_rec(
+                        measurement_round_offset[0]
+                        + gauge_ind
+                        - (self.T * measurements_per_cycle + self.code.n)
                     )
+                    for gauge_ind in self._gauges4stabilizers[0][stabind]
+                ]
                 qubits_and_time = stabilizer.copy()
                 qubits_and_time.extend([0])
                 stim_circuits["0"].append("DETECTOR", record_targets, qubits_and_time)
                 stim_circuits["1"].append("DETECTOR", record_targets, qubits_and_time)
         else:
             for stabind, stabilizer in enumerate(self.z_stabilizers):
-                record_targets = []
-                for gauge_ind in self._gauges4stabilizers[1][stabind]:
-                    record_targets.append(
-                        StimTarget_rec(
-                            measurement_round_offset[1]
-                            + gauge_ind
-                            - (self.T * measurements_per_cycle + self.code.n)
-                        )
+                record_targets = [
+                    StimTarget_rec(
+                        measurement_round_offset[1]
+                        + gauge_ind
+                        - (self.T * measurements_per_cycle + self.code.n)
                     )
+                    for gauge_ind in self._gauges4stabilizers[1][stabind]
+                ]
                 qubits_and_time = stabilizer.copy()
                 qubits_and_time.extend([0])
                 stim_circuits["0"].append("DETECTOR", record_targets, qubits_and_time)
@@ -399,20 +384,26 @@ class CSSCodeCircuit(CodeCircuit):
                 for gind, gs in enumerate(self._gauges4stabilizers[j]):
                     record_targets = []
                     for gauge_ind in gs:
-                        record_targets.append(
-                            StimTarget_rec(
-                                t * measurements_per_cycle
-                                + measurement_round_offset[j]
-                                + gauge_ind
-                                - (self.T * measurements_per_cycle + self.code.n)
-                            )
-                        )
-                        record_targets.append(
-                            StimTarget_rec(
-                                (t - 1) * measurements_per_cycle
-                                + measurement_round_offset[j]
-                                + gauge_ind
-                                - (self.T * measurements_per_cycle + self.code.n)
+                        record_targets.extend(
+                            (
+                                StimTarget_rec(
+                                    t * measurements_per_cycle
+                                    + measurement_round_offset[j]
+                                    + gauge_ind
+                                    - (
+                                        self.T * measurements_per_cycle
+                                        + self.code.n
+                                    )
+                                ),
+                                StimTarget_rec(
+                                    (t - 1) * measurements_per_cycle
+                                    + measurement_round_offset[j]
+                                    + gauge_ind
+                                    - (
+                                        self.T * measurements_per_cycle
+                                        + self.code.n
+                                    )
+                                ),
                             )
                         )
                     qubits_and_time = self._stabilizers[j][gind].copy()
@@ -424,18 +415,16 @@ class CSSCodeCircuit(CodeCircuit):
         ## final measurements
         if self.basis == "x":
             for stabind, stabilizer in enumerate(self.x_stabilizers):
-                record_targets = []
-                for q in stabilizer:
-                    record_targets.append(StimTarget_rec(q - self.code.n))
-                for gauge_ind in self._gauges4stabilizers[0][stabind]:
-                    record_targets.append(
-                        StimTarget_rec(
-                            measurement_round_offset[0]
-                            + gauge_ind
-                            - self.code.n
-                            - measurements_per_cycle
-                        )
+                record_targets = [StimTarget_rec(q - self.code.n) for q in stabilizer]
+                record_targets.extend(
+                    StimTarget_rec(
+                        measurement_round_offset[0]
+                        + gauge_ind
+                        - self.code.n
+                        - measurements_per_cycle
                     )
+                    for gauge_ind in self._gauges4stabilizers[0][stabind]
+                )
                 qubits_and_time = stabilizer.copy()
                 qubits_and_time.extend([self.T])
                 stim_circuits["0"].append("DETECTOR", record_targets, qubits_and_time)
@@ -452,18 +441,16 @@ class CSSCodeCircuit(CodeCircuit):
             )
         else:
             for stabind, stabilizer in enumerate(self.z_stabilizers):
-                record_targets = []
-                for q in stabilizer:
-                    record_targets.append(StimTarget_rec(q - self.code.n))
-                for gauge_ind in self._gauges4stabilizers[1][stabind]:
-                    record_targets.append(
-                        StimTarget_rec(
-                            measurement_round_offset[1]
-                            + gauge_ind
-                            - self.code.n
-                            - measurements_per_cycle
-                        )
+                record_targets = [StimTarget_rec(q - self.code.n) for q in stabilizer]
+                record_targets.extend(
+                    StimTarget_rec(
+                        measurement_round_offset[1]
+                        + gauge_ind
+                        - self.code.n
+                        - measurements_per_cycle
                     )
+                    for gauge_ind in self._gauges4stabilizers[1][stabind]
+                )
                 qubits_and_time = stabilizer.copy()
                 qubits_and_time.extend([self.T])
                 stim_circuits["0"].append("DETECTOR", record_targets, qubits_and_time)

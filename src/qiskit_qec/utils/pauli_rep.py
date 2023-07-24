@@ -535,10 +535,7 @@ def _change_pauli_encoding(
     # modify phase exponents to align with the Y count of the Paulis
 
     def _cal_phase(exp, marker):
-        if marker < 2:
-            return (marker, exp[1])
-        else:
-            return (marker % 2, (exp[1] + 1) % 2)
+        return (marker, exp[1]) if marker < 2 else (marker % 2, (exp[1] + 1) % 2)
 
     if output_phase_encoding == "i":
         phase_exponent = np.mod(phase_exponent + 3 * multiplier * y_count, 4)
@@ -676,16 +673,12 @@ def is_scalar(obj: Any, scalar_pair: bool = False):
         >>> is_scalar(a, scalar_pair=True)
         True
     """
-    if isinstance(obj, str):
-        return True
+    if not isinstance(obj, str) and isinstance(obj, Iterable) and scalar_pair:
+        return not isinstance(obj[0], Iterable)
+    elif not isinstance(obj, str) and isinstance(obj, Iterable):
+        return False
     else:
-        if isinstance(obj, Iterable):
-            if scalar_pair:
-                return not isinstance(obj[0], Iterable)
-            else:
-                return False
-        else:
-            return True
+        return True
 
 
 def squeeze(array_: Any, scalar: bool = False) -> bool:
@@ -716,10 +709,7 @@ def squeeze(array_: Any, scalar: bool = False) -> bool:
         array([1,2,3,4,5])
     """
     array_ = np.squeeze(np.array(array_, dtype=object))
-    if array_.shape == () and scalar is True:
-        return array_.item()
-    else:
-        return array_
+    return array_.item() if array_.shape == () and scalar else array_
 
 
 def is_exp_type(phase_exp: Any, input_phase_encoding: str) -> bool:
@@ -754,9 +744,9 @@ def is_exp_type(phase_exp: Any, input_phase_encoding: str) -> bool:
         phase_exp = phase_exp.tolist()
     if not isinstance(phase_exp, list):
         phase_exp = [phase_exp]
-    if input_phase_encoding in ["i", "-i"]:
+    if input_phase_encoding in {"i", "-i"}:
         return all((x in [0, 1, 2, 3]) for x in phase_exp)
-    if input_phase_encoding in ["is", "-is"]:
+    if input_phase_encoding in {"is", "-is"}:
         return all((item in [[0, 0], [0, 1], [1, 0], [1, 1]]) for item in phase_exp)
 
     return False
@@ -904,11 +894,7 @@ def cpx2cpxstr(
     scalar = is_scalar(cpx) and same_type
     cpx = np.atleast_1d(cpx)
 
-    if ones:
-        one_str = "1"
-    else:
-        one_str = ""
-
+    one_str = "1" if ones else ""
     if scalar:
         return squeeze(_cpx2cpxstr(cpx.round(), one_str=one_str), scalar=scalar)
     else:
@@ -945,7 +931,7 @@ def _cpx2cpxstr(cpx: np.ndarray, one_str: str) -> Union[str, np.ndarray]:
     cpx_str = [str(item) for item in cpx]
     cpx_str = stand_phase_str(cpx_str)
 
-    _ENC = {1: one_str, 1j: "i", -1: "-" + one_str, 0 - 1j: "-i"}
+    _ENC = {1: one_str, 1j: "i", -1: f"-{one_str}", 0 - 1j: "-i"}
     return np.asarray([_ENC[item] for item in cpx])
 
 
@@ -1041,11 +1027,10 @@ def _exp2cpx(phase_exp: np.ndarray, input_encoding: str) -> np.ndarray:
     if input_encoding == "is":
         trans = phase_exp.T
         return np.multiply(1j ** trans[0], (-1) ** trans[1])
-    if input_encoding == "-is":
-        trans = phase_exp.T
-        return ((-1j) ** trans[0]) * (-1) ** trans[1]
-    else:
+    if input_encoding != "-is":
         raise QiskitError(f"{input_encoding} encoding is not supported.")
+    trans = phase_exp.T
+    return ((-1j) ** trans[0]) * (-1) ** trans[1]
 
 
 # ----------------------------------------------------------------------
@@ -1305,14 +1290,16 @@ def _exp2expstr(phase_exp: np.ndarray, encoding: str) -> np.ndarray:
         exp2expstr
     """
     if encoding == "i":
-        return np.array(["(i," + str(item) + ")" for item in phase_exp])
+        return np.array([f"(i,{str(item)})" for item in phase_exp])
     if encoding == "-i":
-        return np.array(["(-i," + str(item) + ")" for item in phase_exp])
+        return np.array([f"(-i,{str(item)})" for item in phase_exp])
     if encoding == "is":
-        return np.array(["(i," + str(item[0]) + ")(-1," + str(item[1]) + ")" for item in phase_exp])
+        return np.array(
+            [f"(i,{str(item[0])})(-1,{str(item[1])})" for item in phase_exp]
+        )
     if encoding == "-is":
         return np.array(
-            ["(-i," + str(item[0]) + ")(-1," + str(item[1]) + ")" for item in phase_exp]
+            [f"(-i,{str(item[0])})(-1,{str(item[1])})" for item in phase_exp]
         )
     else:
         raise QiskitError(f"The encoding {encoding} is not supported.")
@@ -1453,12 +1440,11 @@ def _exp2exp(phase_exp, input_encoding, output_encoding):
     # Calculate and then apply the transformation matrix
     trans = _TRANS[input_encoding][output_encoding]
     partial_encoded_phase_exp = np.asarray([_TI[trans][t] for t in linear_phase_exp])
-    # Delinearize: Convert indexes back to pairs if needed
-    if output_encoding > 1:
-        encoded_phase_exp = np.asarray([_BI[t] for t in partial_encoded_phase_exp])
-    else:
-        encoded_phase_exp = partial_encoded_phase_exp
-    return encoded_phase_exp
+    return (
+        np.asarray([_BI[t] for t in partial_encoded_phase_exp])
+        if output_encoding > 1
+        else partial_encoded_phase_exp
+    )
 
 
 # ----------------------------------------------------------------------
@@ -2233,18 +2219,15 @@ def _str2symplectic(
     ):
         # Fill in the symplectic representation
         for i, char in enumerate(tensor):
-            if syntax == PRODUCT_SYNTAX:
-                index = indices[i]
-            else:
-                index = indices[i] - index_start
+            index = indices[i] if syntax == PRODUCT_SYNTAX else indices[i] - index_start
             if char == "X":
                 matrix[row_index, index] = True
-            elif char == "Z":
-                matrix[row_index, index + num_qubits] = True
             elif char == "Y":
                 matrix[row_index, index] = True
                 matrix[row_index, index + num_qubits] = True
 
+            elif char == "Z":
+                matrix[row_index, index + num_qubits] = True
     out_phase_enc, _ = split_pauli_enc(output_encoding)
     if out_phase_enc in PHASE_ENCODINGS_ISMIS:
         new_phase_exp = np.zeros(shape=(phase_exp.shape[0], 2), dtype=np.int8)

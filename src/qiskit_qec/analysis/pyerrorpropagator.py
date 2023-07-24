@@ -66,9 +66,9 @@ class PyErrorPropagator(BaseErrorPropagator):
         assert set(err_str) <= set("ixyz"), "bad error string"
         for i, q in enumerate(q_idx):
             # self._range_check(q)
-            if err_str[i] == "x" or err_str[i] == "y":
+            if err_str[i] in ["x", "y"]:
                 self.qubit_array[q] ^= 1
-            if err_str[i] == "z" or err_str[i] == "y":
+            if err_str[i] in ["z", "y"]:
                 self.qubit_array[q + self.qreg_size] ^= 1
 
     def load_circuit(self, circ):
@@ -221,12 +221,14 @@ class PyErrorPropagator(BaseErrorPropagator):
         """Return the qubit error state as a lowercase string."""
         error = ""
         for j in range(self.qreg_size):
-            if self.qubit_array[j] == 0 and self.qubit_array[j + self.qreg_size] == 0:
-                error += "i"
-            if self.qubit_array[j] == 0 and self.qubit_array[j + self.qreg_size] == 1:
-                error += "z"
-            if self.qubit_array[j] == 1 and self.qubit_array[j + self.qreg_size] == 0:
-                error += "x"
-            if self.qubit_array[j] == 1 and self.qubit_array[j + self.qreg_size] == 1:
-                error += "y"
+            if self.qubit_array[j] == 0:
+                if self.qubit_array[j + self.qreg_size] == 0:
+                    error += "i"
+                if self.qubit_array[j + self.qreg_size] == 1:
+                    error += "z"
+            if self.qubit_array[j] == 1:
+                if self.qubit_array[j + self.qreg_size] == 0:
+                    error += "x"
+                if self.qubit_array[j + self.qreg_size] == 1:
+                    error += "y"
         return error

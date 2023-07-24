@@ -7,20 +7,16 @@ nargs = 4  # Arguments per function
 
 
 def generate_dummy_code_pybind11(nclasses=10):
-    decl = ""
     bindings = ""
 
-    for cl in range(nclasses):
-        decl += f"class cl{cl:03};\n"
-    decl += "\n"
-
+    decl = "".join(f"class cl{cl:03};\n" for cl in range(nclasses)) + "\n"
     for cl in range(nclasses):
         decl += f"class {cl:03} {{\n"
         decl += "public:\n"
         bindings += f'    py::class_<cl{cl:03}>(m, "cl{cl:03}")\n'
         for fn in range(nfns):
             ret = random.randint(0, nclasses - 1)
-            params = [random.randint(0, nclasses - 1) for i in range(nargs)]
+            params = [random.randint(0, nclasses - 1) for _ in range(nargs)]
             decl += f"    cl{ret:03} *fn_{fn:03}("
             decl += ", ".join(f"cl{p:03} *" for p in params)
             decl += ");\n"
@@ -28,8 +24,7 @@ def generate_dummy_code_pybind11(nclasses=10):
         decl += "};\n\n"
         bindings += "        ;\n"
 
-    result = "#include <pybind11/pybind11.h>\n\n"
-    result += "namespace py = pybind11;\n\n"
+    result = "#include <pybind11/pybind11.h>\n\n" + "namespace py = pybind11;\n\n"
     result += decl + "\n"
     result += "PYBIND11_MODULE(example, m) {\n"
     result += bindings
@@ -38,20 +33,16 @@ def generate_dummy_code_pybind11(nclasses=10):
 
 
 def generate_dummy_code_boost(nclasses=10):
-    decl = ""
     bindings = ""
 
-    for cl in range(nclasses):
-        decl += f"class cl{cl:03};\n"
-    decl += "\n"
-
+    decl = "".join(f"class cl{cl:03};\n" for cl in range(nclasses)) + "\n"
     for cl in range(nclasses):
         decl += "class cl%03i {\n" % cl
         decl += "public:\n"
         bindings += f'    py::class_<cl{cl:03}>("cl{cl:03}")\n'
         for fn in range(nfns):
             ret = random.randint(0, nclasses - 1)
-            params = [random.randint(0, nclasses - 1) for i in range(nargs)]
+            params = [random.randint(0, nclasses - 1) for _ in range(nargs)]
             decl += f"    cl{ret:03} *fn_{fn:03}("
             decl += ", ".join(f"cl{p:03} *" for p in params)
             decl += ");\n"
@@ -59,8 +50,9 @@ def generate_dummy_code_boost(nclasses=10):
         decl += "};\n\n"
         bindings += "        ;\n"
 
-    result = "#include <boost/python.hpp>\n\n"
-    result += "namespace py = boost::python;\n\n"
+    result = (
+        "#include <boost/python.hpp>\n\n" + "namespace py = boost::python;\n\n"
+    )
     result += decl + "\n"
     result += "BOOST_PYTHON_MODULE(example) {\n"
     result += bindings

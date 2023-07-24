@@ -42,10 +42,7 @@ class TestRepetitionCircuitMatcher(unittest.TestCase):
 
         def gint(c):
             """Casts to int if possible"""
-            if c.isnumeric():
-                return int(c)
-            else:
-                return c
+            return int(c) if c.isnumeric() else c
 
         shots = 100
         seed = 100

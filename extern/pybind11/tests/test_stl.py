@@ -14,7 +14,7 @@ def test_vector(doc):
 
     assert m.cast_bool_vector() == [True, False]
     assert m.load_bool_vector([True, False])
-    assert m.load_bool_vector(tuple([True, False]))
+    assert m.load_bool_vector((True, False))
 
     assert doc(m.cast_vector) == "cast_vector() -> List[int]"
     assert doc(m.load_vector) == "load_vector(arg0: List[int]) -> bool"

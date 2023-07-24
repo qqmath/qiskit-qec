@@ -70,47 +70,37 @@ class CMakeBuild(build_ext):
         # In this example, we pass in the version to C++. You might not need to.
         cmake_args += [f"-DEXAMPLE_VERSION_INFO={self.distribution.get_version()}"]  # type: ignore[attr-defined]
 
-        if self.compiler.compiler_type != "msvc":
-            # Using Ninja-build since it a) is available as a wheel and b)
-            # multithreads automatically. MSVC would require all variables be
-            # exported for Ninja to pick it up, which is a little tricky to do.
-            # Users can override the generator with CMAKE_GENERATOR in CMake
-            # 3.15+.
-            if not cmake_generator or cmake_generator == "Ninja":
-                try:
-                    import ninja  # noqa: F401
-
-                    ninja_executable_path = Path(ninja.BIN_DIR) / "ninja"
-                    cmake_args += [
-                        "-GNinja",
-                        f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja_executable_path}",
-                    ]
-                except ImportError:
-                    pass
-
-        else:
+        if self.compiler.compiler_type == "msvc":
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
 
-            # CMake allows an arch-in-generator style for backward compatibility
-            contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
-
-            # Specify the arch if using MSVC generator, but only if it doesn't
-            # contain a backward-compatibility arch spec already in the
-            # generator name.
-            if not single_config and not contains_arch:
-                cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
-
-            # Multi-config generators have a different way to specify configs
             if not single_config:
+                # CMake allows an arch-in-generator style for backward compatibility
+                contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
+
+                if not contains_arch:
+                    cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
+
                 cmake_args += [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}"]
                 build_args += ["--config", cfg]
 
+        elif not cmake_generator or cmake_generator == "Ninja":
+            try:
+                import ninja  # noqa: F401
+
+                ninja_executable_path = Path(ninja.BIN_DIR) / "ninja"
+                cmake_args += [
+                    "-GNinja",
+                    f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja_executable_path}",
+                ]
+            except ImportError:
+                pass
+
         if sys.platform.startswith("darwin"):
-            # Cross-compile support for macOS - respect ARCHFLAGS if set
-            archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
-            if archs:
-                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
+            if archs := re.findall(
+                r"-arch (\S+)", os.environ.get("ARCHFLAGS", "")
+            ):
+                cmake_args += [f'-DCMAKE_OSX_ARCHITECTURES={";".join(archs)}']
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.

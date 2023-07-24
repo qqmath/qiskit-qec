@@ -151,11 +151,9 @@ def test_ctypes_from_buffer():
 
         if pyinfo.readonly:
             cbytes = (ctypes.c_char * len(pyarray)).from_buffer_copy(pyarray)
-            cinfo = m.get_buffer_info(cbytes)
         else:
             cbytes = (ctypes.c_char * len(pyarray)).from_buffer(pyarray)
-            cinfo = m.get_buffer_info(cbytes)
-
+        cinfo = m.get_buffer_info(cbytes)
         assert cinfo.size == pyinfo.size
         assert cinfo.ndim == pyinfo.ndim
         assert cinfo.shape == pyinfo.shape

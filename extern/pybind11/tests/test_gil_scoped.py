@@ -148,10 +148,7 @@ ALL_BASIC_TESTS_PLUS_INTENTIONAL_DEADLOCK = ALL_BASIC_TESTS + (_intentional_dead
 
 
 def _run_in_process(target, *args, **kwargs):
-    if len(args) == 0:
-        test_fn = target
-    else:
-        test_fn = args[0]
+    test_fn = target if not args else args[0]
     # Do not need to wait much, 10s should be more than enough.
     timeout = 0.1 if test_fn is _intentional_deadlock else 10
     process = multiprocessing.Process(target=target, args=args, kwargs=kwargs)

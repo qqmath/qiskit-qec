@@ -37,7 +37,7 @@ for issue in issues:
     else:
         (msg,) = changelog
         if not msg.startswith("* "):
-            msg = "* " + msg
+            msg = f"* {msg}"
         if not msg.endswith("."):
             msg += "."
 

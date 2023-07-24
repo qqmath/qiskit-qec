@@ -100,19 +100,17 @@ class Lattice:
         points = []
         bounds = np.ceil(size / 2).astype(int)
         for i in range(-bounds[0], bounds[0] + 1):
-            for j in range(-bounds[1], bounds[1] + 1):
-                points.append(i * self.u_vec + j * self.v_vec)
-
+            points.extend(
+                i * self.u_vec + j * self.v_vec
+                for j in range(-bounds[1], bounds[1] + 1)
+            )
         return points
 
     def apply_transform_from(self, lattice: "Lattice") -> "Lattice":
         """Apply transformation to self from lattice"""
-        points = []
         if self.points is None:
             raise QiskitError("Lattice points must first be generated")
-        for point in self.points:
-            points.append(np.matmul(point, lattice.transform))
-
+        points = [np.matmul(point, lattice.transform) for point in self.points]
         return Lattice(lattice.u_vec, lattice.v_vec, points=points)
 
     def restrict(self, region: GeometryBounds, *, in_place: bool = False) -> "Lattice":
@@ -130,21 +128,16 @@ class Lattice:
                 restricted to bounding_box
         """
 
-        if isinstance(region, GeometryBounds):
-            if self.points is None:
-                raise QiskitError("Points must first be generated")
-            points = []
-            for point in self.points:
-                if region.contains(point):
-                    points.append(point)
-
-            if in_place:
-                self.points = points
-                return self
-
-            return Lattice(self.u_vec, self.v_vec, points=points)
-        else:
+        if not isinstance(region, GeometryBounds):
             raise QiskitError("Region should be an instance of GeometryBounds")
+        if self.points is None:
+            raise QiskitError("Points must first be generated")
+        points = [point for point in self.points if region.contains(point)]
+        if in_place:
+            self.points = points
+            return self
+
+        return Lattice(self.u_vec, self.v_vec, points=points)
 
     def restrict_for_tiling(
         self,
@@ -218,10 +211,7 @@ class Lattice:
 
         def _find_points(aabb, u_vec, v_vec, point, pts, direction="up"):
             while True:
-                if direction == "up":
-                    point = point + v_vec
-                else:
-                    point = point - v_vec
+                point = point + v_vec if direction == "up" else point - v_vec
                 m = u_vec[1] / u_vec[0]
                 c = point[1] - m * point[0]
                 line = [-m, 1, c]

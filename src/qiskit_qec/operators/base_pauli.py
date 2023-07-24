@@ -290,16 +290,16 @@ class BasePauli(BaseOperator, AdjointMixin, MultiplyMixin):
             QiskitError: Unknown syntax: {syntax_code}. See pauli_rep for options.
         """
         if syntax_code is None:
-            if syntax_str == "Product":
-                BasePauli.EXTERNAL_SYNTAX = pauli_rep.PRODUCT_SYNTAX
-            elif syntax_str == "Latex":
+            if syntax_str == "Latex":
                 BasePauli.EXTERNAL_SYNTAX = pauli_rep.LATEX_SYNTAX
+            elif syntax_str == "Product":
+                BasePauli.EXTERNAL_SYNTAX = pauli_rep.PRODUCT_SYNTAX
             else:
                 BasePauli.EXTERNAL_SYNTAX = pauli_rep.INDEX_SYNTAX
-        else:
-            if syntax_code not in [0, 1, 2]:
-                raise QiskitError("Unknown syntax: {syntax_code}. See pauli_rep for options.")
+        elif syntax_code in [0, 1, 2]:
             BasePauli.EXTERNAL_SYNTAX = syntax_code
+        else:
+            raise QiskitError("Unknown syntax: {syntax_code}. See pauli_rep for options.")
 
     @property
     def print_phase_encoding(self):
@@ -341,11 +341,10 @@ class BasePauli(BaseOperator, AdjointMixin, MultiplyMixin):
         """
         if qubit_order is None:
             BasePauli.EXTERNAL_QUBIT_ORDER = pauli_rep.DEFAULT_QUBIT_ORDER
-        else:
-            if qubit_order not in pauli_rep.QUBIT_ORDERS:
-                raise QiskitError(f"Unknown qubit order: {qubit_order}")
-
+        elif qubit_order in pauli_rep.QUBIT_ORDERS:
             BasePauli.EXTERNAL_QUBIT_ORDER = qubit_order
+        else:
+            raise QiskitError(f"Unknown qubit order: {qubit_order}")
 
     # ---------------------------------------------------------------------
     # Magic Methods
@@ -725,10 +724,7 @@ class BasePauli(BaseOperator, AdjointMixin, MultiplyMixin):
         from qiskit_qec.operators.pauli_list import PauliList
 
         # Get action of Pauli's from Clifford
-        if frame == "s":
-            adj = other.copy()
-        else:
-            adj = other.adjoint()
+        adj = other.copy() if frame == "s" else other.adjoint()
         pauli_list = []
         for z in self._z[:, idx]:
             pauli = Pauli("I" * num_act)

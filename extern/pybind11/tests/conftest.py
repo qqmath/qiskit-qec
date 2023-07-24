@@ -83,9 +83,8 @@ class Output:
         b = _strip_and_dedent(other).splitlines()
         if a == b:
             return True
-        else:
-            self.explanation = _make_explanation(a, b)
-            return False
+        self.explanation = _make_explanation(a, b)
+        return False
 
 
 class Unordered(Output):
@@ -96,9 +95,8 @@ class Unordered(Output):
         b = _split_and_sort(other)
         if a == b:
             return True
-        else:
-            self.explanation = _make_explanation(a, b)
-            return False
+        self.explanation = _make_explanation(a, b)
+        return False
 
 
 class Capture:
@@ -119,9 +117,8 @@ class Capture:
         b = other
         if a == b:
             return True
-        else:
-            self.explanation = a.explanation
-            return False
+        self.explanation = a.explanation
+        return False
 
     def __str__(self):
         return self.out
@@ -159,9 +156,8 @@ class SanitizedString:
         b = _strip_and_dedent(other)
         if a == b:
             return True
-        else:
-            self.explanation = _make_explanation(a.splitlines(), b.splitlines())
-            return False
+        self.explanation = _make_explanation(a.splitlines(), b.splitlines())
+        return False
 
 
 def _sanitize_general(s):
@@ -173,8 +169,7 @@ def _sanitize_general(s):
 
 def _sanitize_docstring(thing):
     s = thing.__doc__
-    s = _sanitize_general(s)
-    return s
+    return _sanitize_general(s)
 
 
 @pytest.fixture
@@ -206,10 +201,8 @@ def pytest_assertrepr_compare(op, left, right):
 @contextlib.contextmanager
 def suppress(exception):
     """Suppress the desired exception"""
-    try:
+    with contextlib.suppress(exception):
         yield
-    except exception:
-        pass
 
 
 def gc_collect():

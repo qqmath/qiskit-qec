@@ -67,8 +67,8 @@ class StabSubSystemCode(Code):
             self.gauge_group = gauge_group
             self._n = self.gauge_group.generators.num_qubits  # pylint: disable=invalid-name
 
-        if gauge_group is not None and shell is not None:
-            raise QiskitError("Only one of gauge_group or shell should be provided")
+            if shell is not None:
+                raise QiskitError("Only one of gauge_group or shell should be provided")
 
         if shell is not None:
             if qubit_data is None or qubit_count is None:

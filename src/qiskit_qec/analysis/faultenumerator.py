@@ -131,13 +131,11 @@ class FaultEnumerator:
         # Construct list of tuples of topologically sorted nodes
         # (node, faulty?, index)
         self.tagged_nodes = []
-        index = 0
-        for node in self.dag.topological_op_nodes():
+        for index, node in enumerate(self.dag.topological_op_nodes()):
             if node_name_label(node) in self.location_types:
                 self.tagged_nodes.append((node, True, index))
             else:
                 self.tagged_nodes.append((node, False, index))
-            index += 1
 
     def _faulty_circuit(self, comb, error: Tuple[str]):
         """Construct faulty QuantumCircuit with the given faults.
@@ -180,10 +178,7 @@ class FaultEnumerator:
 
         def gint(c):
             # Casts to int if possible
-            if c.isnumeric():
-                return int(c)
-            else:
-                return c
+            return int(c) if c.isnumeric() else c
 
         result = execute(
             circ,
@@ -253,8 +248,7 @@ class FaultEnumerator:
         """
         if self.use_compiled:
             while not self.faultenum.done():
-                block = self.faultenum.enumerate(blocksize)
-                yield block
+                yield self.faultenum.enumerate(blocksize)
         else:
             # Fall back to calling the generate() method repeatedly
             block = []

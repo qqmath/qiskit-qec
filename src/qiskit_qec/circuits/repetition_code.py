@@ -31,10 +31,10 @@ from qiskit_qec.utils import DecodingGraphNode, DecodingGraphEdge
 
 
 def _separate_string(string):
-    separated_string = []
-    for syndrome_type_string in string.split("  "):
-        separated_string.append(syndrome_type_string.split(" "))
-    return separated_string
+    return [
+        syndrome_type_string.split(" ")
+        for syndrome_type_string in string.split("  ")
+    ]
 
 
 class RepetitionCodeCircuit(CodeCircuit):
@@ -143,8 +143,7 @@ class RepetitionCodeCircuit(CodeCircuit):
         circuit_list[0] = circuit['0']
         circuit_list[1] = circuit['1']
         """
-        circuit_list = [self.circuit[log] for log in ["0", "1"]]
-        return circuit_list
+        return [self.circuit[log] for log in ["0", "1"]]
 
     def x(self, logs=("0", "1"), barrier=False):
         """Applies a logical x to the circuits for the given logical values.
@@ -184,7 +183,9 @@ class RepetitionCodeCircuit(CodeCircuit):
         """
         barrier = barrier or self._barriers
 
-        self.link_bits.append(ClassicalRegister((self.d - 1), "round_" + str(self.T) + "_link_bit"))
+        self.link_bits.append(
+            ClassicalRegister(self.d - 1, f"round_{str(self.T)}_link_bit")
+        )
 
         for log in ["0", "1"]:
             self.circuit[log].add_register(self.link_bits[-1])
@@ -242,7 +243,7 @@ class RepetitionCodeCircuit(CodeCircuit):
 
     def _process_string(self, string):
         # logical readout taken from
-        measured_log = string[0] + " " + string[self.d - 1]
+        measured_log = f"{string[0]} {string[self.d - 1]}"
 
         if self._resets:
             syndrome = string[self.d :]
@@ -250,20 +251,21 @@ class RepetitionCodeCircuit(CodeCircuit):
             # if there are no resets, results are cumulative and need to be separated
             cumsyn_list = string[self.d :].split(" ")
             syndrome_list = []
-            for tt, cum_syn in enumerate(cumsyn_list[0:-1]):
-                syn = ""
-                for j in range(len(cum_syn)):
-                    syn += str(int(cumsyn_list[tt][j] != cumsyn_list[tt + 1][j]))
+            for tt, cum_syn in enumerate(cumsyn_list[:-1]):
+                syn = "".join(
+                    str(int(cumsyn_list[tt][j] != cumsyn_list[tt + 1][j]))
+                    for j in range(len(cum_syn))
+                )
                 syndrome_list.append(syn)
             syndrome_list.append(cumsyn_list[-1])
             syndrome = " ".join(syndrome_list)
 
-        # final syndrome deduced from final code qubit readout
-        full_syndrome = ""
-        for j in range(self.d - 1):
-            full_syndrome += "0" * (string[j] == string[j + 1]) + "1" * (string[j] != string[j + 1])
+        full_syndrome = "".join(
+            "0" * (string[j] == string[j + 1]) + "1" * (string[j] != string[j + 1])
+            for j in range(self.d - 1)
+        )
         # results from all other syndrome measurements then added
-        full_syndrome = full_syndrome + syndrome
+        full_syndrome += syndrome
 
         # changes between one syndrome and the next then calculated
         syndrome_list = full_syndrome.split(" ")
@@ -277,11 +279,7 @@ class RepetitionCodeCircuit(CodeCircuit):
                 syndrome_changes += "0" * (not change) + "1" * change
             syndrome_changes += " "
 
-        # the space separated string of syndrome changes then gets a
-        # double space separated logical value on the end
-        new_string = measured_log + "  " + syndrome_changes[:-1]
-
-        return new_string
+        return f"{measured_log}  {syndrome_changes[:-1]}"
 
     def string2nodes(self, string, **kwargs):
         """
@@ -377,11 +375,7 @@ class RepetitionCodeCircuit(CodeCircuit):
                 given_logicals += node.qubits
         given_logicals = set(given_logicals)
 
-        # bicolour code qubits according to the domain walls
-        walls = []
-        for node in nodes:
-            if not node.is_boundary:
-                walls.append(node.qubits[1])
+        walls = [node.qubits[1] for node in nodes if not node.is_boundary]
         walls.sort()
         c = 0
         colors = ""
@@ -395,13 +389,13 @@ class RepetitionCodeCircuit(CodeCircuit):
 
         # determine which were in the minority
         error_c_min = str(int(colors.count("1") < self.d / 2))
-        # and majority
-        error_c_max = str((int(error_c_min) + 1) % 2)
-
         # list the colours with the max error one first
         # (unless we do min only)
         error_cs = []
         if minimal:
+            # and majority
+            error_c_max = str((int(error_c_min) + 1) % 2)
+
             error_cs.append(error_c_max)
         error_cs.append(error_c_min)
 
@@ -411,11 +405,7 @@ class RepetitionCodeCircuit(CodeCircuit):
         for error_c in error_cs:
             num_errors = colors.count(error_c)
 
-            # determine the corresponding flipped logicals
-            flipped_logicals = []
-            for j in [0, self.d - 1]:
-                if colors[-1 - j] == error_c:
-                    flipped_logicals.append(j)
+            flipped_logicals = [j for j in [0, self.d - 1] if colors[-1 - j] == error_c]
             flipped_logicals = set(flipped_logicals)
 
             # if unneeded logical zs are given, cluster is not neutral
@@ -437,7 +427,7 @@ class RepetitionCodeCircuit(CodeCircuit):
                 node = DecodingGraphNode(is_boundary=True, qubits=qubits, index=elem)
                 flipped_logical_nodes.append(node)
 
-            if neutral and flipped_logical_nodes == []:
+            if neutral and not flipped_logical_nodes:
                 break
 
         return neutral, flipped_logical_nodes, num_errors
@@ -459,7 +449,7 @@ class RepetitionCodeCircuit(CodeCircuit):
         # split into gauge and final outcomes
         outcome = "".join([str(c) for c in outcome])
         outcome = outcome.split(" ")
-        gs = outcome[0:-1]
+        gs = outcome[:-1]
         gauge_outcomes = [[int(c) for c in r] for r in gs]
         finals = outcome[-1]
         # if circuit did not use resets, construct standard output
@@ -632,9 +622,14 @@ class ArcCircuit(CodeCircuit):
             edges = []
             cl = len(cycle)
             for j in range(cl):
-                for edge in [(cycle[j], cycle[(j + 1) % cl]), (cycle[(j + 1) % cl], cycle[j])]:
-                    if edge in lg_edges:
-                        edges.append((lg_nodes[edge[0]], lg_nodes[edge[1]]))
+                edges.extend(
+                    (lg_nodes[edge[0]], lg_nodes[edge[1]])
+                    for edge in [
+                        (cycle[j], cycle[(j + 1) % cl]),
+                        (cycle[(j + 1) % cl], cycle[j]),
+                    ]
+                    if edge in lg_edges
+                )
             for edge in edges:
                 cycle_dict[edge] += cycle
         for edge, ns in cycle_dict.items():
@@ -660,9 +655,7 @@ class ArcCircuit(CodeCircuit):
                 self.color[nodes[n]] = j
                 unmatched.remove(n)
         for j, n in enumerate(unmatched):
-            # color opposite to a colored neighbor
-            neighbors = graph.neighbors(n)
-            if neighbors:
+            if neighbors := graph.neighbors(n):
                 for nn in neighbors:
                     if nodes[nn] in self.color:
                         self.color[nodes[n]] = (self.color[nodes[nn]] + 1) % 2
@@ -805,10 +798,9 @@ class ArcCircuit(CodeCircuit):
 
         # use degree 1 code qubits for logical z readouts
         graph = self._get_coupling_graph()
-        z_logicals = []
-        for n, node in enumerate(graph.nodes()):
-            if graph.degree(n) == 1:
-                z_logicals.append(node)
+        z_logicals = [
+            node for n, node in enumerate(graph.nodes()) if graph.degree(n) == 1
+        ]
         # if there are none, just use the first
         if not z_logicals:  # z_logicals == []
             z_logicals = [min(self.code_index.keys())]

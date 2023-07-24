@@ -94,8 +94,7 @@ class TestSymplectic(TestCase):
 
         mat = np.array([1, 1, 0, 0], dtype=np.bool_)
         result = symplectic_product(mat, mat)
-        answer = 0
-        self.assertTrue(answer == result)
+        self.assertTrue(result == 0)
 
     def test_invalid_symplectic_product(self):
         """Tests invalid symplectic product."""

@@ -38,58 +38,59 @@ class TestSurfaceCodes(unittest.TestCase):
             "100000000 0000 0000",
         ]
 
-        test_nodes = {}
-        test_nodes["x"] = [
-            [],
-            [
-                DecodingGraphNode(
-                    time=1,
-                    qubits=[0, 1, 3, 4],
-                    index=1,
-                ),
-                DecodingGraphNode(
-                    time=1,
-                    qubits=[4, 5, 7, 8],
-                    index=2,
-                ),
-            ],
-            [
-                DecodingGraphNode(
-                    time=0,
-                    qubits=[0, 1, 3, 4],
-                    index=1,
-                ),
-                DecodingGraphNode(
-                    time=0,
-                    qubits=[4, 5, 7, 8],
-                    index=2,
-                ),
-            ],
-            [
-                DecodingGraphNode(
-                    is_boundary=True,
-                    qubits=[0, 3, 6],
-                    index=0,
-                ),
-                DecodingGraphNode(
-                    time=1,
-                    qubits=[0, 1, 3, 4],
-                    index=1,
-                ),
-            ],
-            [
-                DecodingGraphNode(
-                    is_boundary=True,
-                    qubits=[2, 5, 8],
-                    index=1,
-                ),
-                DecodingGraphNode(
-                    time=1,
-                    qubits=[4, 5, 7, 8],
-                    index=2,
-                ),
-            ],
-        ]
+        test_nodes = {
+            "x": [
+                [],
+                [
+                    DecodingGraphNode(
+                        time=1,
+                        qubits=[0, 1, 3, 4],
+                        index=1,
+                    ),
+                    DecodingGraphNode(
+                        time=1,
+                        qubits=[4, 5, 7, 8],
+                        index=2,
+                    ),
+                ],
+                [
+                    DecodingGraphNode(
+                        time=0,
+                        qubits=[0, 1, 3, 4],
+                        index=1,
+                    ),
+                    DecodingGraphNode(
+                        time=0,
+                        qubits=[4, 5, 7, 8],
+                        index=2,
+                    ),
+                ],
+                [
+                    DecodingGraphNode(
+                        is_boundary=True,
+                        qubits=[0, 3, 6],
+                        index=0,
+                    ),
+                    DecodingGraphNode(
+                        time=1,
+                        qubits=[0, 1, 3, 4],
+                        index=1,
+                    ),
+                ],
+                [
+                    DecodingGraphNode(
+                        is_boundary=True,
+                        qubits=[2, 5, 8],
+                        index=1,
+                    ),
+                    DecodingGraphNode(
+                        time=1,
+                        qubits=[4, 5, 7, 8],
+                        index=2,
+                    ),
+                ],
+            ]
+        }
         test_nodes["z"] = [
             [],
             [
@@ -133,7 +134,7 @@ class TestSurfaceCodes(unittest.TestCase):
                 generated_nodes = code.string2nodes(string)
                 self.assertTrue(
                     generated_nodes == nodes,
-                    "Incorrect nodes for basis = " + basis + " for string = " + string + ".",
+                    f"Incorrect nodes for basis = {basis} for string = {string}.",
                 )
 
     def test_check_nodes(self):

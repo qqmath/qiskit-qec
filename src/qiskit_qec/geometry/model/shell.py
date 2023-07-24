@@ -183,9 +183,7 @@ class Shell(ShapeObject):
 
         def _weight_len(path: List) -> int:
             length = len(path)
-            if path[0] == path[-1] and length > 1:
-                return length - 1
-            return length
+            return length - 1 if path[0] == path[-1] and length > 1 else length
 
         face_list = []
 
@@ -206,7 +204,7 @@ class Shell(ShapeObject):
                     face.vertices,
                 )
 
-            while len(rd_vertices) > 0:
+            while rd_vertices:
                 s_vertex = rd_vertices.pop()
                 path = _find_restricted_path(s_vertex)
                 if debug:
@@ -300,7 +298,7 @@ class Shell(ShapeObject):
                 raise QiskitError(f"Unknown boundary strategy {boundary_strategy}")
 
             # Create the wireframe and face
-            if len(edges) > 0:
+            if edges:
                 if debug:
                     logger.debug("Create Wireframe and face with edges:")
                     for edge in edges:
@@ -376,11 +374,11 @@ class Shell(ShapeObject):
         for face in shell.faces:
             num_stacked_operators = len(qubit_data.operator[face.vertices[0].id])
             for i in range(num_stacked_operators):
-                pauli_str = ""
-                for vertex in face.vertices:
-                    pauli_str += str(qubit_data.operator[vertex.id][i]) + str(
-                        qubit_data.index[vertex.id]
-                    )
+                pauli_str = "".join(
+                    str(qubit_data.operator[vertex.id][i])
+                    + str(qubit_data.index[vertex.id])
+                    for vertex in face.vertices
+                )
                 pauli_str_list.append(pauli_str)
         return PauliList(pauli_str_list), qubit_data
 

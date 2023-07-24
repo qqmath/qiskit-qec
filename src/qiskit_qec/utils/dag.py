@@ -20,8 +20,8 @@ def node_name_label(node: DAGNode) -> str:
     Use node.op._label if it exists. Otherwise use node.name.
     Return a string.
     """
-    if "_label" in node.op.__dict__ and node.op._label is not None:
-        name_label = node.op._label
-    else:
-        name_label = node.name
-    return name_label
+    return (
+        node.op._label
+        if "_label" in node.op.__dict__ and node.op._label is not None
+        else node.name
+    )

@@ -137,15 +137,15 @@ class ClAYGDecoderTest(unittest.TestCase):
             logical_errors = 0
             min_flips_for_logical = code.d
             for sample in range(samples):
-                # generate random string
-                string = ""
-                for _ in range(code.T):
-                    string += "0" * (d - 1) + " "
+                string = "".join("0" * (d - 1) + " " for _ in range(code.T))
                 string += testcases[sample]
                 # get and check corrected_z_logicals
                 outcome = decoder.process(string)
-                logical_outcome = sum([outcome[int(z_logical / 2)] for z_logical in z_logicals]) % 2
-                if not logical_outcome == 0:
+                logical_outcome = (
+                    sum(outcome[int(z_logical / 2)] for z_logical in z_logicals)
+                    % 2
+                )
+                if logical_outcome != 0:
                     logical_errors += 1
                     min_flips_for_logical = min(min_flips_for_logical, string.count("1"))
 
@@ -153,7 +153,7 @@ class ClAYGDecoderTest(unittest.TestCase):
             # and that min num errors to cause logical errors >d/3
             self.assertTrue(
                 logical_errors / samples
-                < (math.factorial(d)) / (math.factorial(int(d / 2)) ** 2) * p**4,
+                < (math.factorial(d)) / math.factorial(d // 2) ** 2 * p**4,
                 "Logical error rate shouldn't exceed d!/((d/2)!^2)*p^(d/2).",
             )
             self.assertTrue(
@@ -165,10 +165,7 @@ class ClAYGDecoderTest(unittest.TestCase):
         """
         Construct codes for the logical error rate test.
         """
-        codes = []
-        # TODO: Add more codes
-        codes.append(RepetitionCodeCircuit(d=d, T=1))
-        return codes
+        return [RepetitionCodeCircuit(d=d, T=1)]
 
 
 if __name__ == "__main__":

@@ -58,9 +58,9 @@ class DecodingGraph:
             self._make_syndrome_graph()
 
         self._logical_nodes = []
-        for node in self.graph.nodes():
-            if node.is_boundary:
-                self._logical_nodes.append(node)
+        self._logical_nodes.extend(
+            node for node in self.graph.nodes() if node.is_boundary
+        )
 
     def _make_syndrome_graph(self):
         if not self.brute and hasattr(self.code, "_make_syndrome_graph"):
@@ -72,10 +72,7 @@ class DecodingGraph:
             if self.code is not None:
                 # get the circuit used as the base case
                 if isinstance(self.code.circuit, dict):
-                    if "base" not in dir(self.code):
-                        base = "0"
-                    else:
-                        base = self.code.base
+                    base = "0" if "base" not in dir(self.code) else self.code.base
                     qc = self.code.circuit[base]
                 else:
                     qc = self.code.circuit
@@ -189,16 +186,12 @@ class DecodingGraph:
                     boundary.append(n1)
                 elif self.graph[n1].is_boundary:
                     boundary.append(n0)
-                else:
-                    if (1 - 2 * av_xor[n0, n1]) != 0:
-                        x = (av_vv[n0, n1] - av_v[n0] * av_v[n1]) / (1 - 2 * av_xor[n0, n1])
-                        if x < 0.25:
-                            error_probs[n0, n1] = max(0, 0.5 - np.sqrt(0.25 - x))
-                        else:
-                            error_probs[n0, n1] = np.nan
-                    else:
-                        error_probs[n0, n1] = np.nan
+                elif av_xor[n0, n1] == 1 / 2:
+                    error_probs[n0, n1] = np.nan
 
+                else:
+                    x = (av_vv[n0, n1] - av_v[n0] * av_v[n1]) / (1 - 2 * av_xor[n0, n1])
+                    error_probs[n0, n1] = max(0, 0.5 - np.sqrt(0.25 - x)) if x < 0.25 else np.nan
             prod = {}
             for n0 in boundary:
                 for n1 in self.graph.node_indexes():
@@ -213,7 +206,6 @@ class DecodingGraph:
             for n0 in boundary:
                 error_probs[n0, n0] = 0.5 + (av_v[n0] - 0.5) / prod[n0]
 
-        # generally applicable but approximate method
         elif method == self.METHOD_NAIVE:
             # for every edge in the graph, we'll determine the histogram
             # of whether their nodes are in the error nodes
@@ -224,12 +216,10 @@ class DecodingGraph:
             for string in counts:
                 error_nodes = set(self.code.string2nodes(string, logical=logical))
                 for edge in self.graph.edge_list():
-                    element = ""
-                    for j in range(2):
-                        if self.graph[edge[j]] in error_nodes:
-                            element += "1"
-                        else:
-                            element += "0"
+                    element = "".join(
+                        "1" if self.graph[edge[j]] in error_nodes else "0"
+                        for j in range(2)
+                    )
                     count[edge][element] += counts[string]
 
             # ratio of error on both to error on neither is, to first order,
@@ -268,11 +258,9 @@ class DecodingGraph:
 
         error_probs = self.get_error_probs(counts, method=method)
 
-        boundary_nodes = []
-        for n, node in enumerate(self.graph.nodes()):
-            if node.is_boundary:
-                boundary_nodes.append(n)
-
+        boundary_nodes = [
+            n for n, node in enumerate(self.graph.nodes()) if node.is_boundary
+        ]
         for edge in self.graph.edge_list():
             if edge not in error_probs:
                 # these are associated with the boundary, and appear as loops in error_probs
@@ -379,17 +367,16 @@ class CSSDecodingGraph:
         """
         layer_types = []
         last_step = basis
-        for _ in range(blocks):
-            for step in round_schedule:
-                if basis == "z" and step == "z" and last_step == "z":
-                    layer_types.append("g")
-                elif basis == "z" and step == "z" and last_step == "x":
-                    layer_types.append("s")
-                elif basis == "x" and step == "x" and last_step == "x":
-                    layer_types.append("g")
-                elif basis == "x" and step == "x" and last_step == "z":
-                    layer_types.append("s")
-                last_step = step
+        for _, step in itertools.product(range(blocks), round_schedule):
+            if basis == "z" and step == "z" and last_step == "z":
+                layer_types.append("g")
+            elif basis == "z" and step == "z" and last_step == "x":
+                layer_types.append("s")
+            elif basis == "x" and step == "x" and last_step == "x":
+                layer_types.append("g")
+            elif basis == "x" and step == "x" and last_step == "z":
+                layer_types.append("s")
+            last_step = step
         if last_step == basis:
             layer_types.append("g")
         else:
@@ -412,15 +399,15 @@ class CSSDecodingGraph:
         gauges = []
         stabilizers = []
         boundary = []
-        if self.basis == "z":
-            gauges = self.css_z_gauge_ops
-            stabilizers = self.css_z_stabilizer_ops
-            boundary = self.css_z_boundary
-        elif self.basis == "x":
+        if self.basis == "x":
             gauges = self.css_x_gauge_ops
             stabilizers = self.css_x_stabilizer_ops
             boundary = self.css_x_boundary
 
+        elif self.basis == "z":
+            gauges = self.css_z_gauge_ops
+            stabilizers = self.css_z_stabilizer_ops
+            boundary = self.css_z_boundary
         # Construct the decoding graph
         idx = 0  # vertex index counter
         idxmap = {}  # map from vertex data (t, qubits) to vertex index
@@ -469,7 +456,7 @@ class CSSDecodingGraph:
                     com = list(set(op_g).intersection(set(op_h)))
                     if -1 in com:
                         com.remove(-1)
-                    if len(com) > 0:
+                    if com:
                         # Include properties for use with pymatching:
                         # qubit_id is an integer or set of integers
                         # weight is a floating point number
@@ -528,13 +515,13 @@ class CSSDecodingGraph:
                         com = list(set(op_g).intersection(set(op_h)))
                         if -1 in com:
                             com.remove(-1)
-                        if len(com) > 0:  # not Case (c)
+                        if com:  # not Case (c)
                             # Include properties for use with pymatching:
                             # qubit_id is an integer or set of integers
                             # weight is a floating point number
                             # error_probability is a floating point number
                             # Case (a)
-                            if set(com) == set(op_h) or set(com) == set(op_g):
+                            if set(com) in [set(op_h), set(op_g)]:
                                 edge = DecodingGraphEdge(qubits=[], weight=1)
                                 edge.properties["highlighted"] = False
                                 edge.properties["measurement_error"] = 1

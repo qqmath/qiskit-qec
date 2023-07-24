@@ -43,7 +43,7 @@ def create_lambda_matrix(n: int) -> np.ndarray:
 
     See Also: _create_lambda_matrix
     """
-    if not n > 0:
+    if n <= 0:
         raise QiskitError("n must be a positive integer")
     if not isinstance(n, (int, np.integer)):
         raise QiskitError("n must be an integer")
@@ -126,11 +126,12 @@ def augment_mat(matrix: np.ndarray, pos: str = "right") -> np.ndarray:
     _augment_mat
     """
     matrix = np.asarray(matrix)
-    if not matrix.ndim == 2:
+    if matrix.ndim != 2:
         raise QiskitError("Input array must have two dimensions")
-    if pos not in ["top", "bottom", "right", "left"]:
+    if pos in {"top", "bottom", "right", "left"}:
+        return _augment_mat(matrix, pos)
+    else:
         raise QiskitError("Unknown position")
-    return _augment_mat(matrix, pos)
 
 
 def _augment_mat(matrix: np.array, pos: str) -> np.ndarray:
@@ -347,7 +348,7 @@ def rref_complete(matrix: np.ndarray) -> Tuple[List[int], np.ndarray, np.ndarray
     if not matrix.shape:  # matrix.shape == ():
         raise QiskitError("Not a suitable matrix input")
     matrix = np.atleast_2d(matrix)
-    if not matrix.ndim == 2:
+    if matrix.ndim != 2:
         raise QiskitError("Not a 2 dimensional matrix")
 
     return _rref_complete(matrix)

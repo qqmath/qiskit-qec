@@ -53,6 +53,6 @@ class ThreeBitDecoder(CircuitModelMatchingDecoder):
         assert blocks == 2
         assert round_schedule == "z"
         x_gauge_outcomes = []
-        z_gauge_outcomes = [outcome[0:2], outcome[2:4]]
+        z_gauge_outcomes = [outcome[:2], outcome[2:4]]
         final_outcomes = outcome[4:7]
         return x_gauge_outcomes, z_gauge_outcomes, final_outcomes

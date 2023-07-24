@@ -139,14 +139,13 @@ class CodeLibrary:
         Returns:
             Code: _description_
         """
-        if record[Properties.TYPE] == "StabSubSystemCode":
-            gauge_group = GaugeGroup(
-                isotropic_generators=record.get(Properties.ISOTROPIC_GEN, None),
-                hyperbolic_generators=record.get(Properties.HYPERBOLIC_GEN, None),
-            )
-            return StabSubSystemCode(gauge_group)
-        else:
+        if record[Properties.TYPE] != "StabSubSystemCode":
             raise QiskitError(f"Unsupported code type: {record[Properties.TYPE]}")
+        gauge_group = GaugeGroup(
+            isotropic_generators=record.get(Properties.ISOTROPIC_GEN, None),
+            hyperbolic_generators=record.get(Properties.HYPERBOLIC_GEN, None),
+        )
+        return StabSubSystemCode(gauge_group)
 
     def search(
         self,
@@ -180,11 +179,7 @@ class CodeLibrary:
             else:
                 k_range = k
 
-            if isinstance(index, int):
-                index_range = [index]
-            else:
-                index_range = index
-
+            index_range = [index] if isinstance(index, int) else index
         return self._search(
             n_range,
             k_range,
@@ -207,38 +202,38 @@ class CodeLibrary:
 
         codes = []
 
-        if self.fetch_method == "memory":
-            # If we have on (n,k,index) pair then simply return the requested code data
-            if single_search:
-                try:
-                    code_data = self.data[n_range][k_range][index_range]
-                    if info_only:
-                        codes.append(Properties(**code_data))
-                    else:
-                        codes.append(self.data2code(**code_data))
-                except KeyError:
-                    pass
-                return codes
-
-            for n, k in product(n_range, k_range):
-                try:
-                    data = self.data[n][k]
-                    if index_range is not None:
-                        data = {ind: data[ind] for ind in index_range if ind in data.keys()}
-
-                    code_data = [
-                        entry for entry in data.values() if kwargs.items() <= entry.items()
-                    ]
-
-                    if info_only:
-                        codes = codes + [Properties(**entry) for entry in code_data]
-                    else:
-                        codes = codes + [self.data2code(**entry) for entry in code_data]
-                except KeyError:
-                    continue
-            return codes
-        else:
+        if self.fetch_method != "memory":
             raise QiskitError("Only mempory method currently implemented")
+        # If we have on (n,k,index) pair then simply return the requested code data
+        if single_search:
+            try:
+                code_data = self.data[n_range][k_range][index_range]
+                if info_only:
+                    codes.append(Properties(**code_data))
+                else:
+                    codes.append(self.data2code(**code_data))
+            except KeyError:
+                pass
+            return codes
+
+        for n, k in product(n_range, k_range):
+            try:
+                data = self.data[n][k]
+                if index_range is not None:
+                    data = {ind: data[ind] for ind in index_range if ind in data.keys()}
+
+                code_data = [
+                    entry for entry in data.values() if kwargs.items() <= entry.items()
+                ]
+
+                codes = (
+                    codes + [Properties(**entry) for entry in code_data]
+                    if info_only
+                    else codes + [self.data2code(**entry) for entry in code_data]
+                )
+            except KeyError:
+                continue
+        return codes
 
     def in_range(self, n, k, index) -> bool:
         """_summary_
@@ -564,8 +559,8 @@ def all_small_codes(
         if not isinstance(index, (int, list)):
             raise QiskitError(f"index must be an integer or a list of integers: {index}")
 
-    info_only = bool(info_only)
-    list_only = bool(list_only)
+    info_only = info_only
+    list_only = list_only
 
     return _all_small_codes(
         n=n, k=k, index=index, info_only=info_only, list_only=list_only, **kwargs

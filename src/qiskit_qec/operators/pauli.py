@@ -218,7 +218,7 @@ class Pauli(BasePauli):
             and BasePauli.EXTERNAL_SYNTAX == pauli_rep.PRODUCT_SYNTAX
         ):
             front = self[-self._truncate__ :].to_label()
-            return front + "..."
+            return f"{front}..."
         return self.to_label()
 
     def __array__(self, dtype=None):
@@ -228,9 +228,7 @@ class Pauli(BasePauli):
 
     def __eq__(self, other):
         """Test if two Paulis are equal."""
-        if not isinstance(other, BasePauli):
-            return False
-        return self._eq(other)
+        return False if not isinstance(other, BasePauli) else self._eq(other)
 
     def __len__(self):
         """Return the number of qubits in the Pauli."""
@@ -637,9 +635,7 @@ class Pauli(BasePauli):
         if not isinstance(other, BasePauli):
             other = Pauli(other)
         ret = super().commutes(other, qargs=qargs)
-        if len(ret) == 1:
-            return ret[0]
-        return ret
+        return ret[0] if len(ret) == 1 else ret
 
     def anticommutes(self, other, qargs=None):
         """Return True if other Pauli anticommutes with self.

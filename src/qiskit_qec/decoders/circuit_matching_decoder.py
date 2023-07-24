@@ -83,7 +83,7 @@ class CircuitModelMatchingDecoder(ABC):
         if set(self.round_schedule) > set("xyz"):
             raise QiskitQECError("expected round schedule of 'x', 'y', 'z' chars")
         self.basis = basis
-        if not self.basis in ("x", "z"):
+        if self.basis not in {"x", "z"}:
             raise QiskitQECError("expected basis to be 'x' or 'z'")
 
         self.uniform = uniform

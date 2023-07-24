@@ -42,30 +42,30 @@ def get_cached_decoding_graph(path):
     """
     Returns graph cached in file at path "file" using cache_graph method.
     """
-    if os.path.isfile(path) and not os.stat(path) == 0:
-        with open(path, "r+", encoding="utf-8") as file:
-            json_data = json.loads(file.read())
-            net_graph = nx.node_link_graph(json_data)
-        ret_graph = rx.networkx_converter(net_graph, keep_attributes=True)
-        for node_index, node in zip(ret_graph.node_indices(), ret_graph.nodes()):
-            del node["__networkx_node__"]
-            qubits = node.pop("qubits")
-            time = node.pop("time")
-            index = node.pop("index")
-            is_boundary = node.pop("is_boundary")
-            properties = node.copy()
-            node = DecodingGraphNode(is_boundary=is_boundary, time=time, index=index, qubits=qubits)
-            node.properties = properties
-            ret_graph[node_index] = node
-        for edge_index, edge in zip(ret_graph.edge_indices(), ret_graph.edges()):
-            weight = edge.pop("weight")
-            qubits = edge.pop("qubits")
-            properties = edge.copy()
-            edge = DecodingGraphEdge(weight=weight, qubits=qubits)
-            edge.properties = properties
-            ret_graph.update_edge_by_index(edge_index, edge)
-        return ret_graph
-    return None
+    if not os.path.isfile(path) or os.stat(path) == 0:
+        return None
+    with open(path, "r+", encoding="utf-8") as file:
+        json_data = json.loads(file.read())
+        net_graph = nx.node_link_graph(json_data)
+    ret_graph = rx.networkx_converter(net_graph, keep_attributes=True)
+    for node_index, node in zip(ret_graph.node_indices(), ret_graph.nodes()):
+        del node["__networkx_node__"]
+        qubits = node.pop("qubits")
+        time = node.pop("time")
+        index = node.pop("index")
+        is_boundary = node.pop("is_boundary")
+        properties = node.copy()
+        node = DecodingGraphNode(is_boundary=is_boundary, time=time, index=index, qubits=qubits)
+        node.properties = properties
+        ret_graph[node_index] = node
+    for edge_index, edge in zip(ret_graph.edge_indices(), ret_graph.edges()):
+        weight = edge.pop("weight")
+        qubits = edge.pop("qubits")
+        properties = edge.copy()
+        edge = DecodingGraphEdge(weight=weight, qubits=qubits)
+        edge.properties = properties
+        ret_graph.update_edge_by_index(edge_index, edge)
+    return ret_graph
 
 
 def cache_decoding_graph(graph, path):

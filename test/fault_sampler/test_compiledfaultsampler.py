@@ -51,8 +51,8 @@ class TestCompiledFaultSampler(unittest.TestCase):
                 num_faults[failures] = 1
             else:
                 num_faults[failures] += 1
-        for key in num_faults:
-            num_faults[key] /= 100000
+        for value_ in num_faults.values():
+            value_ /= 100000
         limit = {
             0: (1 - 0.1) ** 5,
             1: 5 * 0.1 * (1 - 0.1) ** 4,
@@ -84,10 +84,7 @@ class TestCompiledFaultSampler(unittest.TestCase):
             10,
         )
         block = fe.sample(100000)
-        failures = 0
-        for x in block:
-            if x[3][0] == 1:
-                failures += 1
+        failures = sum(1 for x in block if x[3][0] == 1)
         failures /= 100000
         self.assertAlmostEqual(failures, 0.2 * 2.0 / 3.0, 2)
 

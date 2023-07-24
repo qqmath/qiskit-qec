@@ -64,7 +64,7 @@ def pauli_group_labels(nq, full_group=True):  # pylint: disable=invalid-name
 def pauli_mat(label):
     """Return Pauli matrix from a Pauli label"""
     mat = np.eye(1, dtype=complex)
-    if label[0:2] == "-i":
+    if label[:2] == "-i":
         mat *= -1j
         label = label[2:]
     elif label[0] == "-":
@@ -1584,19 +1584,14 @@ class TestPauliListMethods(QiskitTestCase):
             p = i if len(i) == 1 else i[1]
             target0 = PauliList(
                 [
-                    phase + "X" + p,
-                    phase + "Y" + p,
-                    phase + "Z" + p,
+                    f"{phase}X{p}",
+                    f"{phase}Y{p}",
+                    f"{phase}Z{p}",
                     ("" if phase else "-i") + "I" + p,
                 ]
             )
             target1 = PauliList(
-                [
-                    i + "X",
-                    i + "Y",
-                    i + "Z",
-                    ("" if phase else "-i") + p + "I",
-                ]
+                [f"{i}X", f"{i}Y", f"{i}Z", ("" if phase else "-i") + p + "I"]
             )
 
             with self.subTest(msg="single-column single-val from str"):
@@ -1615,9 +1610,13 @@ class TestPauliListMethods(QiskitTestCase):
         pauli = PauliList(["X", "Y", "iZ"])
         for i in [["I", "X", "Y"], ["X", "iY", "Z"], ["Y", "Z", "I"]]:
             target0 = PauliList(
-                ["X" + i[0], "Y" + i[1] if len(i[1]) == 1 else i[1][0] + "Y" + i[1][1], "iZ" + i[2]]
+                [
+                    f"X{i[0]}",
+                    f"Y{i[1]}" if len(i[1]) == 1 else f"{i[1][0]}Y{i[1][1]}",
+                    f"iZ{i[2]}",
+                ]
             )
-            target1 = PauliList([i[0] + "X", i[1] + "Y", "i" + i[2] + "Z"])
+            target1 = PauliList([f"{i[0]}X", f"{i[1]}Y", f"i{i[2]}Z"])
 
             with self.subTest(msg="single-column multiple-vals from PauliList"):
                 value = pauli.insert(0, PauliList(i), qubit=True)
@@ -1633,12 +1632,12 @@ class TestPauliListMethods(QiskitTestCase):
                 p = i if len(i) == j else i[1:]
                 target0 = PauliList(
                     [
-                        phase + "X" + p,
+                        f"{phase}X{p}",
                         ("-" if phase else "i") + "Y" + p,
-                        phase + "Z" + p,
+                        f"{phase}Z{p}",
                     ]
                 )
-                target1 = PauliList([i + "X", ("-" if phase else "i") + p + "Y", i + "Z"])
+                target1 = PauliList([f"{i}X", ("-" if phase else "i") + p + "Y", f"{i}Z"])
 
                 with self.subTest(msg="multiple-columns single-val from str"):
                     value = pauli.insert(0, i, qubit=True)
@@ -1662,15 +1661,15 @@ class TestPauliListMethods(QiskitTestCase):
             ]:
                 target0 = PauliList(
                     [
-                        "X" + i[0],
-                        "Y" + i[1],
+                        f"X{i[0]}",
+                        f"Y{i[1]}",
                         ("-i" if len(i[2]) == j else "") + "Z" + i[2][-j:],
                     ]
                 )
                 target1 = PauliList(
                     [
-                        i[0] + "X",
-                        i[1] + "Y",
+                        f"{i[0]}X",
+                        f"{i[1]}Y",
                         ("-i" if len(i[2]) == j else "") + i[2][-j:] + "Z",
                     ]
                 )

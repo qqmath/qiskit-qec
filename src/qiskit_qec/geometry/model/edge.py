@@ -43,8 +43,7 @@ class Edge(ShapeObject):
             item.add_parent(self)
 
     def __repr__(self) -> str:
-        string = "Edge" + self.__str__()
-        return string
+        return f"Edge{self.__str__()}"
 
     def __str__(self):
         string = "["

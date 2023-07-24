@@ -39,11 +39,11 @@ class TestDecodoku(unittest.TestCase):
         ]
 
         game = Decodoku(d=d, k=2, errors=test_errors)
-        highlighted_nodes = []
-        for node in game.decoding_graph.graph.nodes():
-            if node["highlighted"]:
-                highlighted_nodes.append(node)
-
+        highlighted_nodes = [
+            node
+            for node in game.decoding_graph.graph.nodes()
+            if node["highlighted"]
+        ]
         self.assertTrue(len(highlighted_nodes) == 3, "Wrong number of nodes for example errors.")
         for node in correct_nodes:
             self.assertTrue(

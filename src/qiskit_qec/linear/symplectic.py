@@ -95,7 +95,7 @@ def symplectic_product(mat1: np.ndarray, mat2: np.ndarray) -> Union[int, np.ndar
     if not is_symplectic_form(mat1) or not is_symplectic_form(mat2):
         raise QiskitError("Input matrices/vectors must be GF(2) symplectic matrices/vectors")
 
-    if not mat1_np_array.ndim == mat2_np_array.ndim:
+    if mat1_np_array.ndim != mat2_np_array.ndim:
         raise QiskitError(
             f"Input matrices must have the \
             same dimensions: {mat1_np_array.ndim} is \
@@ -103,7 +103,7 @@ def symplectic_product(mat1: np.ndarray, mat2: np.ndarray) -> Union[int, np.ndar
         )
 
     if mat1_np_array.ndim == 1:
-        if not mat1_np_array.shape[0] == mat2_np_array.shape[0]:
+        if mat1_np_array.shape[0] != mat2_np_array.shape[0]:
             raise QiskitError(
                 f"Input vectors must have the same \
             dimensions: {mat1_np_array.shape[0]} not equal \
@@ -158,9 +158,7 @@ def _symplectic_product_vv(vec1: np.ndarray, vec2: np.ndarray, n: int) -> int:
     numpy arrays with dtype=int8
     """
     assert vec1.dtype != bool
-    r = 0
-    for i in range(n):
-        r += vec1[i] * vec2[n + i] + vec1[n + i] * vec2[i]
+    r = sum(vec1[i] * vec2[n + i] + vec1[n + i] * vec2[i] for i in range(n))
     return r % 2
 
 
@@ -229,10 +227,7 @@ def _symplectic_product_dense(mat1: np.ndarray, mat2: np.ndarray) -> Union[int, 
     assert mat1.dtype != bool
     m1, m2 = np.hsplit(mat1, 2)  # pylint: disable=unbalanced-tuple-unpacking
     result = np.hstack((m2, m1)).dot(mat2.transpose()) % 2
-    if result.size == 1:
-        return int(result.item())
-    else:
-        return result
+    return int(result.item()) if result.size == 1 else result
 
 
 # ---------------------------------------------------------------
@@ -505,19 +500,19 @@ def locate_hyper_partner(
     See Also:
     _locate_hyper_partner, build_hyper_partner, _build_hyper_partner
     """
-    if not (is_symplectic_form(matrix) and is_symplectic_vector_form(vector)):
+    if not is_symplectic_form(matrix) or not is_symplectic_vector_form(vector):
         raise QiskitError(
             f"Input {matrix} must be a GF(2) symplectic matrix\
             and input {vector} must be a GF(2) symplectic vector"
         )
 
-    if not matrix.ndim == 2:
+    if matrix.ndim != 2:
         raise QiskitError(f"Input {matrix} must be a 2 dimensional array")
 
-    if not vector.ndim == 1:
+    if vector.ndim != 1:
         raise QiskitError(f"Input {vector} must be a 1 dimensional array")
 
-    if not matrix.shape[1] == vector.shape[0]:
+    if matrix.shape[1] != vector.shape[0]:
         raise QiskitError(
             f"Input matrix and vector must have the same number \
             of columns/length {matrix.shape[1]}!={vector.shape[0]}"
@@ -556,10 +551,15 @@ def _locate_hyper_partner(matrix: np.ndarray, vector: np.ndarray) -> Union[None,
     locate_hyper_partner, build_hyper_partner, _build_hyper_partner
     """
     n = matrix.shape[1] >> 1
-    for index, item in enumerate(matrix):
-        if _symplectic_product_vv(item.astype(int), vector.astype(int), n) == 1:
-            return (item.copy(), index)
-    return None
+    return next(
+        (
+            (item.copy(), index)
+            for index, item in enumerate(matrix)
+            if _symplectic_product_vv(item.astype(int), vector.astype(int), n)
+            == 1
+        ),
+        None,
+    )
 
 
 # ---------------------------------------------------------------
@@ -763,10 +763,10 @@ def symplectic_gram_schmidt(
         if not is_symplectic_vector_form(z[0]):
             raise QiskitError("Input hyperbolic array z is not a GF(2) sympletic matrix")
 
-    if not len(x) == len(z):
+    if len(x) != len(z):
         raise QiskitError("Input hyperbolic arrays have different dimensions")
 
-    if len(x) > 0 and x[0].shape[0] != z[0].shape[0]:
+    if x and x[0].shape[0] != z[0].shape[0]:
         raise QiskitError("Input hyperbolic arrays have different dimensions")
 
     if x != []:
@@ -848,7 +848,7 @@ def _symplectic_gram_schmidt(
 
     x = np.asarray(x)
     z = np.asarray(z)
-    if len(center_) == 0:
+    if not center_:
         center_ = np.zeros(shape=(1, x.shape[1]), dtype=np.bool_)
     else:
         center_ = np.asarray(center_)
@@ -894,10 +894,7 @@ def count_num_y(matrix: np.ndarray, scalar: bool = True) -> Union[np.ndarray, in
         raise QiskitError("Input matrix/vector not a GF(2) symplectic matrix")
     num_qubits = matrix.shape[1] >> 1
     result = _count_num_y(matrix, num_qubits)
-    if scalar and matrix.shape[0] == 1:
-        return result[0]
-    else:
-        return result
+    return result[0] if scalar and matrix.shape[0] == 1 else result
 
 
 def _count_num_y(matrix: np.ndarray, n: int) -> np.ndarray:
@@ -967,11 +964,7 @@ def is_symplectic_matrix_form(
         return False
     if not np.array_equal(matrix, matrix % 2):
         return False
-    if dtype is None:
-        return True
-    if not isinstance(matrix[0][0], dtype):
-        return False
-    return True
+    return True if dtype is None else isinstance(matrix[0][0], dtype)
 
 
 def is_symplectic_vector_form(
@@ -1011,17 +1004,13 @@ def is_symplectic_vector_form(
     is_symplectic_matrix_form, is_symplectic_form
     """
     vector = np.array(vector)
-    if not vector.ndim == 1:
+    if vector.ndim != 1:
         return False
     if vector.shape[0] % 2:
         return False
     if not np.array_equal(vector, vector % 2):
         return False
-    if dtype is None:
-        return True
-    if not isinstance(vector[0], dtype):
-        return False
-    return True
+    return True if dtype is None else isinstance(vector[0], dtype)
 
 
 def is_symplectic_form(
@@ -1234,10 +1223,7 @@ def center(matrix: np.ndarray, preserve: bool = False) -> np.ndarray:
     matrix = np.atleast_2d(np.array(matrix))
     if not is_symplectic_matrix_form(matrix):
         raise QiskitError("Input matrix is not a symplectic matrix")
-    if preserve:
-        return _center_preserve(matrix)
-    else:
-        return _center(matrix)
+    return _center_preserve(matrix) if preserve else _center(matrix)
 
 
 def _center(matrix: np.ndarray) -> bool:
@@ -1299,11 +1285,7 @@ def _center_preserve(matrix: np.ndarray) -> np.ndarray:
     rematrix = deque()
     num = matrix.shape[1] >> 1
     for opi in reversed(matrix):
-        break_flag = False
-        for opj in matrix:
-            if _symplectic_product_vv(opi, opj, num) == 1:
-                break_flag = True
-                break
+        break_flag = any(_symplectic_product_vv(opi, opj, num) == 1 for opj in matrix)
         if break_flag:
             rematrix.append(opi)
         else:
@@ -1791,10 +1773,10 @@ def remove_hyper_elements_from_hyper_form(
     z = np.atleast_2d(np.array(z))
     indices = list(indices)
 
-    if not (is_symplectic_matrix_form(x) and is_symplectic_matrix_form(z)):
+    if not is_symplectic_matrix_form(x) or not is_symplectic_matrix_form(z):
         raise QiskitError("x and z must be GF(2) symplectic matrices/vectors")
 
-    if not x.shape == z.shape:
+    if x.shape != z.shape:
         raise QiskitError(
             f"x (shape={x.shape})and z (shape={z.shape}) \
             must have the same shape"
@@ -1804,7 +1786,7 @@ def remove_hyper_elements_from_hyper_form(
         center_ = np.atleast_2d(np.array(center_))
         if not is_symplectic_matrix_form(center_):
             raise QiskitError("Input center is not a GF(2) symplectiv matrix/vector")
-        if not x.shape[1] == center_.shape[1]:
+        if x.shape[1] != center_.shape[1]:
             raise QiskitError(
                 "x and z must have the same size in the second \
                 dimension as the center"
@@ -2063,7 +2045,7 @@ def normalizer(
 
     x = np.atleast_2d(np.array(x))
     z = np.atleast_2d(np.array(z))
-    if not (is_symplectic_matrix_form(x) and is_symplectic_matrix_form(z)):
+    if not is_symplectic_matrix_form(x) or not is_symplectic_matrix_form(z):
         raise QiskitError("x and z must be GF(2) symplectic matrices/vectors")
 
     zero_mat = False
@@ -2071,10 +2053,10 @@ def normalizer(
         matrix = np.zeros(shape=(0, x.shape[1]), dtype=np.bool_)
         zero_mat = True
 
-    if not x.shape == z.shape:
+    if x.shape != z.shape:
         raise QiskitError("x and z must have the same shape")
 
-    if not matrix.shape[1] == x.shape[1]:
+    if matrix.shape[1] != x.shape[1]:
         raise QiskitError("All inputs must have the same number of columns/length")
 
     if not is_center(matrix, np.vstack((matrix, x, z))):

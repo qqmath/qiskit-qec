@@ -42,11 +42,7 @@ def get_syndrome(code, noise_model, shots=1024):
         noise_model=noise_model,
         shots=shots,
     )
-    results = {}
-    for log in ["0", "1"]:
-        results[log] = job.result().get_counts(log)
-
-    return results
+    return {log: job.result().get_counts(log) for log in ["0", "1"]}
 
 
 def get_noise(p_meas, p_gate):
@@ -67,7 +63,7 @@ class TestRepCodes(unittest.TestCase):
 
     def single_error_test(
         self, code
-    ):  # NOT run directly by unittest; called by test_graph_constructions
+    ):    # NOT run directly by unittest; called by test_graph_constructions
         """
         Insert all possible single qubit errors into the given code,
         and check that each creates a pair of syndrome nodes.
@@ -80,16 +76,16 @@ class TestRepCodes(unittest.TestCase):
                 blank_qc.add_register(qreg)
             for creg in qc.cregs:
                 blank_qc.add_register(creg)
-            error_circuit = {}
             circuit_name = {}
             depth = len(qc)
+            error_circuit = {}
             for j in range(depth):
                 qubits = qc.data[j][1]
                 for qubit in qubits:
                     for error in ["x", "y", "z"]:
                         temp_qc = blank_qc.copy()
                         temp_qc.name = str((j, qubit, error))
-                        temp_qc.data = qc.data[0:j]
+                        temp_qc.data = qc.data[:j]
                         getattr(temp_qc, error)(qubit)
                         temp_qc.data += qc.data[j : depth + 1]
                         circuit_name[(j, qubit, error)] = temp_qc.name
@@ -108,15 +104,7 @@ class TestRepCodes(unittest.TestCase):
                             self.assertIn(
                                 len(nodes),
                                 [0, 2],
-                                "Error of type "
-                                + error
-                                + " on qubit "
-                                + str(qubit)
-                                + " at depth "
-                                + str(j)
-                                + " creates "
-                                + str(len(nodes))
-                                + " nodes in syndrome graph, instead of 2.",
+                                f"Error of type {error} on qubit {str(qubit)} at depth {str(j)} creates {len(nodes)} nodes in syndrome graph, instead of 2.",
                             )
 
     def test_string2nodes_1(self):
@@ -173,7 +161,7 @@ class TestRepCodes(unittest.TestCase):
                                 d, T, xbasis=xbasis, resets=resets, delay=delay
                             )
         for params, code in codes.items():
-            d, T = params[0:2]
+            d, T = params[:2]
             self.single_error_test(code)
             if len(params) == 5:
                 d, T, xbasis, resets, delay = params
@@ -211,7 +199,7 @@ class TestARCCodes(unittest.TestCase):
 
     def single_error_test(
         self, code
-    ):  # NOT run directly by unittest; called by test_graph_constructions
+    ):    # NOT run directly by unittest; called by test_graph_constructions
         """
         Insert all possible single qubit errors into the given code,
         and check that each creates a pair of syndrome nodes.
@@ -222,9 +210,9 @@ class TestARCCodes(unittest.TestCase):
         link_graph = code._get_link_graph()
         for n, node in enumerate(link_graph.nodes()):
             edges = link_graph.incident_edges(n)
-            incident_links[node] = set()
-            for edge in edges:
-                incident_links[node].add(link_graph.edges()[edge]["link qubit"])
+            incident_links[node] = {
+                link_graph.edges()[edge]["link qubit"] for edge in edges
+            }
             if node in code.z_logicals:
                 incident_links[node].add(None)
 
@@ -240,13 +228,11 @@ class TestARCCodes(unittest.TestCase):
             for _, _, _, output in fault_paths:
                 string = "".join([str(c) for c in output[::-1]])
                 nodes = code.string2nodes(string)
-                # check that it doesn't extend over more than two rounds
-                ts = [node.time for node in nodes if not node.is_boundary]
-                if ts:
+                if ts := [node.time for node in nodes if not node.is_boundary]:
                     minimal = minimal and (max(ts) - min(ts)) <= 1
                 # check that it doesn't extend beyond the neigbourhood of a code qubit
                 flat_nodes = code.flatten_nodes(nodes)
-                link_qubits = set(node.properties["link qubit"] for node in flat_nodes)
+                link_qubits = {node.properties["link qubit"] for node in flat_nodes}
                 minimal = minimal and link_qubits in incident_links.values()
                 self.assertTrue(
                     minimal,
@@ -256,7 +242,7 @@ class TestARCCodes(unittest.TestCase):
                 neutral, flipped_logicals, _ = code.check_nodes(nodes)
                 self.assertTrue(
                     neutral and flipped_logicals == [],
-                    "Error: Single error nodes are not neutral: " + string,
+                    f"Error: Single error nodes are not neutral: {string}",
                 )
                 # and that the given flipped logical makes sense
                 for node in nodes:
@@ -269,9 +255,9 @@ class TestARCCodes(unittest.TestCase):
 
     def test_graph_construction(self):
         """Test single errors for a range of layouts"""
-        triangle = [(0, 1, 2), (2, 3, 4), (4, 5, 0)]
         tadpole = [(0, 1, 2), (2, 3, 4), (4, 5, 0), (2, 7, 6)]
         t_pose = [(0, 1, 2), (2, 3, 4), (2, 5, 6), (6, 7, 8)]
+        triangle = [(0, 1, 2), (2, 3, 4), (4, 5, 0)]
         for links in [triangle, tadpole, t_pose]:
             for resets in [True, False]:
                 conditional_resets = [False]
@@ -292,11 +278,7 @@ class TestARCCodes(unittest.TestCase):
                         )
                         self.assertTrue(
                             code.resets == resets,
-                            "Code has resets="
-                            + str(code.resets)
-                            + " when it should be "
-                            + str(resets)
-                            + ".",
+                            f"Code has resets={str(code.resets)} when it should be {str(resets)}.",
                         )
                         self.single_error_test(code)
 
@@ -398,7 +380,7 @@ class TestARCCodes(unittest.TestCase):
             for string in counts:
                 # final result should be same as initial
                 correct_final = code.logical + str((int(code.logical) + 1) % 2) + code.logical * 2
-                correct = correct and string[0:4] == correct_final
+                correct = correct and string[:4] == correct_final
         self.assertTrue(correct, "Result string not as required")
 
     def test_bases(self):
@@ -502,7 +484,7 @@ class TestDecoding(unittest.TestCase):
 
     def clustering_decoder_test(
         self, Decoder
-    ):  # NOT run directly by unittest; called by test_graph_constructions
+    ):    # NOT run directly by unittest; called by test_graph_constructions
         """Test decoding of ARCs and RCCs with clustering decoders"""
 
         # parameters for test
@@ -517,11 +499,15 @@ class TestDecoding(unittest.TestCase):
         codes.append(ArcCircuit(links, 0))
         # then make a bunch of non-linear ARCs
         links_cross = [(2 * j, 2 * j + 1, 2 * (j + 1)) for j in range(d - 2)]
-        links_cross.append((2 * (d - 2), 2 * (d - 2) + 1, 2 * (int(d / 2))))
-        links_cross.append(((2 * (int(d / 2))), 2 * (d - 1), 2 * (d - 1) + 1))
+        links_cross.extend(
+            (
+                (2 * (d - 2), 2 * (d - 2) + 1, 2 * (d // 2)),
+                (2 * (d // 2), 2 * (d - 1), 2 * (d - 1) + 1),
+            )
+        )
         codes.append(ArcCircuit(links_cross, 0))
         # ladder (works for even d)
-        half_d = int(d / 2)
+        half_d = d // 2
         links_ladder = []
         for row in [0, 1]:
             for j in range(half_d - 1):
@@ -547,7 +533,7 @@ class TestDecoding(unittest.TestCase):
                 # generate random string
                 string = "".join([choices(["1", "0"], [1 - p, p])[0] for _ in range(d)])
                 for _ in range(code.T):
-                    string = string + " " + "0" * (d - 1)
+                    string = f"{string} " + "0" * (d - 1)
                 # get and check corrected_z_logicals
                 corrected_z_logicals = decoder.process(string)
                 for j, z_logical in enumerate(decoder.measured_logicals):
@@ -561,14 +547,7 @@ class TestDecoding(unittest.TestCase):
             # check that min num errors to cause logical errors >d/3
             self.assertTrue(
                 min_error_num > d / 3,
-                str(min_error_num)
-                + " errors cause logical error despite d="
-                + str(code.d)
-                + " for code "
-                + str(c)
-                + " with "
-                + min_error_string
-                + ".",
+                f"{str(min_error_num)} errors cause logical error despite d={str(code.d)} for code {str(c)} with {min_error_string}.",
             )
 
     def test_bravyi_haah(self):

@@ -101,7 +101,6 @@ def convert_jsons(data, i, csvfile="fails.csv"):
         n = code_info[N]
         k = code_info[K]
         code_str = f"[[{n},{k},{index}]]"
-        new_code_info = {}
         # create any new fields that are missing/require old fields
 
         if OLD_LOW_WEIGHT_FORM not in code_info:
@@ -115,7 +114,7 @@ def convert_jsons(data, i, csvfile="fails.csv"):
                 csvwriter.writerow([code_info[N], code_info[K], index, problem])
             continue
 
-        new_code_info[ISOTROPIC_GEN] = code_info[OLD_LOW_WEIGHT_FORM]
+        new_code_info = {ISOTROPIC_GEN: code_info[OLD_LOW_WEIGHT_FORM]}
         if code_info.get(IS_CSS, False) == 1 and OLD_CSS_LOGICALS in code_info:
             new_code_info[LOGICAL_OPS] = code_info[OLD_CSS_LOGICALS]
         elif code_info.get(IS_GF4LINEAR, False) == 1 and OLD_GF4_LINEAR_LOGICALS in code_info:

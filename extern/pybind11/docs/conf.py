@@ -339,9 +339,7 @@ def generate_doxygen_xml(app):
 
 
 def prepare(app):
-    with open(DIR.parent / "README.rst") as f:
-        contents = f.read()
-
+    contents = Path(DIR.parent / "README.rst").read_text()
     if app.builder.name == "latex":
         # Remove badges and stuff from start
         contents = contents[contents.find(r".. start") :]

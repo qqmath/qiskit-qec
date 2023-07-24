@@ -84,7 +84,17 @@ class HHCDecoder(CircuitModelMatchingDecoder):
         for r in range(blocks):
             bits_into_round = 0
             for rs in round_schedule:
-                if rs == "z":
+                if rs == "x":
+                    x_gauge_outcomes.append(
+                        outcome[
+                            r * self.bits_per_round
+                            + bits_into_round : r * self.bits_per_round
+                            + bits_into_round
+                            + len(self.css_x_gauge_ops)
+                        ]
+                    )
+                    bits_into_round += len(self.css_x_gauge_ops)
+                elif rs == "z":
                     z_gauge_outcomes.append(
                         outcome[
                             r * self.bits_per_round
@@ -112,16 +122,6 @@ class HHCDecoder(CircuitModelMatchingDecoder):
                         ]
                     )
                     bits_into_round += len(self.css_z_gauge_ops)
-                if rs == "x":
-                    x_gauge_outcomes.append(
-                        outcome[
-                            r * self.bits_per_round
-                            + bits_into_round : r * self.bits_per_round
-                            + bits_into_round
-                            + len(self.css_x_gauge_ops)
-                        ]
-                    )
-                    bits_into_round += len(self.css_x_gauge_ops)
         final_outcomes = outcome[-self.n :]
         # Process the flags
         logging.debug("left_flag_outcomes = %s", left_flag_outcomes)
@@ -193,11 +193,11 @@ class HHCDecoder(CircuitModelMatchingDecoder):
                     syn = temp_syndrome(frame, self.css_x_gauge_ops)
                     logging.debug("frame syndrome, cycle %d -> %s", xidx, syn)
                     block = x_gauge_outcomes[xidx]
-                    block = list(u ^ v for u, v in zip(block, syn))
+                    block = [u ^ v for u, v in zip(block, syn)]
                     x_gauge_outcomes[xidx] = block
                     logging.debug("x gauge update, cycle %d -> %s", xidx, block)
                     xidx += 1
         # Update the final outcomes if X basis measurement
         if self.basis == "x":
-            final_outcomes = list(u ^ v for u, v in zip(final_outcomes, frame))
+            final_outcomes = [u ^ v for u, v in zip(final_outcomes, frame)]
         return x_gauge_outcomes, final_outcomes

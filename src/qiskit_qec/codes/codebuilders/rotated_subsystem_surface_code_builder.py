@@ -68,11 +68,7 @@ class RotatedSubsystemSurfaceCodeBuilder(Builder):
         elif not bool(dx % 2) or dx < 3 or not bool(dz % 2) or dz < 3:
             raise QiskitError(f"dx:{dx} and dz:{dz} must be odd positive integers ≥ 3")
 
-        if w3_op == Pauli("Z"):
-            self.optype = "pZXZX"
-        else:
-            self.optype = "pXZXZ"
-
+        self.optype = "pZXZX" if w3_op == Pauli("Z") else "pXZXZ"
         delta = 0.2
         self.cutter = Shape.rect(
             origin=(0, -1),

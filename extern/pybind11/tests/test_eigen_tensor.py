@@ -147,10 +147,7 @@ def test_bad_python_to_cpp_casts(m):
         m.round_trip_tensor_noconvert(tensor_ref.astype(np.float64))
     )
 
-    if m.needed_options == "F":
-        bad_options = "C"
-    else:
-        bad_options = "F"
+    bad_options = "C" if m.needed_options == "F" else "F"
     # Shape, dtype and the order need to be correct for a TensorMap cast
     with pytest.raises(
         TypeError, match=r"^round_trip_view_tensor\(\): incompatible function arguments"

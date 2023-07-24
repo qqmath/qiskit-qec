@@ -35,16 +35,15 @@ class GeometryBounds:
         """
 
         if center is None:
-            if size is None:
-                if dim is None:
-                    center = np.array([0, 0, 0])
-                    size = np.array([0, 0, 0])
-                else:
-                    center = np.zeros(dim)
-                    size = np.zeros(dim)
-            else:
+            if size is not None:
                 raise QiskitError("Both center and size must be spefified togther or not at all")
 
+            if dim is None:
+                center = np.array([0, 0, 0])
+                size = np.array([0, 0, 0])
+            else:
+                center = np.zeros(dim)
+                size = np.zeros(dim)
         self.center = np.array(center)
         self.size = np.array(size)
 
@@ -164,14 +163,11 @@ class GeometryBounds:
 
         if abs(b) < 0.0000001:
             if abs(c - xmin) < 0.0000001:
-                intercepts.append([xmin, ymin])
-                intercepts.append([xmin, ymax])
+                intercepts.extend(([xmin, ymin], [xmin, ymax]))
             elif xmin <= c <= xmax:
-                intercepts.append([c, ymin])
-                intercepts.append([c, ymax])
+                intercepts.extend(([c, ymin], [c, ymax]))
             elif abs(c - xmax) < 0.0000001:
-                intercepts.append([xmax, ymin])
-                intercepts.append([xmax, ymax])
+                intercepts.extend(([xmax, ymin], [xmax, ymax]))
         else:
             # |.
             y = (c - a * xmin) / b
@@ -183,28 +179,26 @@ class GeometryBounds:
                 intercepts.append([xmax, y])
             # ‾
             if abs(a) < 0.0000001 and abs(c / b - ymax) < 0.0000001:
-                intercepts.append([xmin, ymax])
-                intercepts.append([xmax, ymax])
+                intercepts.extend(([xmin, ymax], [xmax, ymax]))
             elif abs(a) > 0.0000001:
                 x = (c - b * ymax) / a
                 if xmin <= x <= xmax:
                     intercepts.append([x, ymax])
             # _
             if abs(a) < 0.0000001 and abs(c / b - ymin) < 0.0000001:
-                intercepts.append([xmin, ymin])
-                intercepts.append([xmax, ymin])
+                intercepts.extend(([xmin, ymin], [xmax, ymin]))
             elif abs(a) > 0.0000001:
                 x = (c - b * ymin) / a
                 if xmin <= x <= xmax:
                     intercepts.append([x, ymin])
         result = []
-        if len(intercepts) > 0:
+        if intercepts:
             for item in intercepts:
-                flag = True
-                for value in result:
-                    if abs(item[0] - value[0]) < 0.0000001 and abs(item[1] - value[1]) < 0.0000001:
-                        flag = False
-                        continue
+                flag = not any(
+                    abs(item[0] - value[0]) < 0.0000001
+                    and abs(item[1] - value[1]) < 0.0000001
+                    for value in result
+                )
                 if flag:
                     result.append(item)
         return result

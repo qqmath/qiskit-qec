@@ -115,23 +115,21 @@ def get_stim_circuits(circuit_dict: Dict[int, QuantumCircuit]):
                         probs[pauli_error_2_stim_order[ptype[0]["params"][0]]] = pauli_probs[pind]
                     stim_circuit.append("PAULI_CHANNEL_2", qubit_indices, probs[1:])
                 else:
-                    raise Exception("Unexpected operations: " + str([inst, qargs, cargs]))
+                    raise Exception(f"Unexpected operations: {[inst, qargs, cargs]}")
+            elif inst.name in qiskit_to_stim_dict:
+                if len(cargs) > 0:  # keeping track of measurement indices in stim
+                    measurement_data.append(
+                        [
+                            cargs[0]._index + register_offset[qargs[0]._register.name],
+                            qargs[0]._register.name,
+                        ]
+                    )
+                if qiskit_to_stim_dict[inst.name] == "TICK":  # barrier
+                    stim_circuit.append("TICK")
+                else:  # gates/measurements acting on qubits
+                    stim_circuit.append(qiskit_to_stim_dict[inst.name], qubit_indices)
             else:
-                # Gates and measurements
-                if inst.name in qiskit_to_stim_dict:
-                    if len(cargs) > 0:  # keeping track of measurement indices in stim
-                        measurement_data.append(
-                            [
-                                cargs[0]._index + register_offset[qargs[0]._register.name],
-                                qargs[0]._register.name,
-                            ]
-                        )
-                    if qiskit_to_stim_dict[inst.name] == "TICK":  # barrier
-                        stim_circuit.append("TICK")
-                    else:  # gates/measurements acting on qubits
-                        stim_circuit.append(qiskit_to_stim_dict[inst.name], qubit_indices)
-                else:
-                    raise Exception("Unexpected operations: " + str([inst, qargs, cargs]))
+                raise Exception(f"Unexpected operations: {[inst, qargs, cargs]}")
 
         stim_circuits[circ_label] = stim_circuit
         stim_measurement_data[circ_label] = measurement_data
@@ -216,7 +214,7 @@ def detector_error_model_to_rx_graph(model: StimDetectorErrorModel) -> rx.PyGrap
     def handle_error(p: float, dets: List[int], frame_changes: List[int], hyperedge: Dict):
         if p == 0:
             return
-        if len(dets) == 0:
+        if not dets:
             return
         if len(dets) == 1:
             dets = [dets[0], model.num_detectors]

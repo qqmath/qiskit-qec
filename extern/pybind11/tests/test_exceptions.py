@@ -123,7 +123,7 @@ def test_python_alreadyset_in_destructor(monkeypatch, capsys):
 
     assert m.python_alreadyset_in_destructor("already_set demo") is True
     if hooked:
-        assert triggered is True
+        assert triggered
 
     _, captured_stderr = capsys.readouterr()
     assert captured_stderr.startswith("Exception ignored in: 'already_set demo'")
@@ -342,10 +342,7 @@ def test_flaky_exception_failure_point_str():
     )
     assert not py_err_set_after_what
     lines = what.splitlines()
-    if env.PYPY and len(lines) == 3:
-        n = 3  # Traceback is missing.
-    else:
-        n = 5
+    n = 3 if env.PYPY and len(lines) == 3 else 5
     assert (
         lines[:n]
         == [
@@ -361,10 +358,7 @@ def test_flaky_exception_failure_point_str():
 def test_cross_module_interleaved_error_already_set():
     with pytest.raises(RuntimeError) as excinfo:
         m.test_cross_module_interleaved_error_already_set()
-    assert str(excinfo.value) in (
-        "2nd error.",  # Almost all platforms.
-        "RuntimeError: 2nd error.",  # Some PyPy builds (seen under macOS).
-    )
+    assert str(excinfo.value) in {"2nd error.", "RuntimeError: 2nd error."}
 
 
 def test_error_already_set_double_restore():
